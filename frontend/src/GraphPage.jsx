@@ -149,26 +149,35 @@ export default function GraphPage() {
     async function initRecorder() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
-
+  
       recorder.ondataavailable = (e) => {
         console.log('➤ ondataavailable chunk:', e.data, 'size:', e.data.size);
         audioChunksRef.current.push(e.data);
         console.log('  → total chunks now:', audioChunksRef.current.length);
       };
-
+  
       recorder.onstop = () => {
         console.log('➤ recorder stopped, chunks:', audioChunksRef.current.length);
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         console.log('  → final blob size:', blob.size, 'bytes');
         const form = new FormData();
         form.append('audio', blob);
-        fetch('/transcribe', { method: 'POST', body: form });
+  
+        // POST to your FastAPI backend on port 8000:
+        fetch('http://localhost:8000/transcribe', {
+          method: 'POST',
+          body: form
+        })
+        .then(res => res.json())
+        .then(data => console.log('Server response:', data))
+        .catch(err => console.error('Transcribe error:', err));
       };
-
+  
       setMediaRecorder(recorder);
     }
     initRecorder();
   }, []);
+  
 
   const onNodesChange = useCallback(
     (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
