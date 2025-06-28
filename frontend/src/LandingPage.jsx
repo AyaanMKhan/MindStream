@@ -14,7 +14,7 @@ export default function LandingPage() {
           <h2 className="text-lg font-bold tracking-tight">MindStream</h2>
         </div>
         <div className="flex items-center gap-8">
-          <a href="#" className="text-sm font-medium">About</a>
+          <Link to="/about" className="text-sm font-medium hover:text-[#0b80ee] transition-colors">About</Link>
           <Link to="/graph" className="text-sm font-medium hover:text-[#0b80ee] transition-colors">Graph</Link>
           <Link to="/mindmap" className="h-10 rounded-full bg-[#0b80ee] px-4 text-sm font-bold flex items-center">
             Try It Now
