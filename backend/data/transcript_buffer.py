@@ -1,3 +1,5 @@
+# data/transcript_buffer.py
+
 class TranscriptBuffer:
     def __init__(self, max_chunks: int = 100):
         self.chunks = []
@@ -16,4 +18,4 @@ class TranscriptBuffer:
         self.prior_map = new_map
 
     def get_map(self):
-        return self.prior_map
+        return self.prior_map 

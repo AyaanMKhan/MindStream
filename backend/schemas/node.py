@@ -1,5 +1,5 @@
+from typing import Optional, Dict, List
 from pydantic import BaseModel
-from typing import List, Optional, Dict
 
 class GeminiPayload(BaseModel):
     prompt: str
@@ -27,4 +27,4 @@ class MapPayload(BaseModel):
     chunks: List[TranscriptChunk]
 
 class MapResponse(BaseModel):
-    nodes: List[MindMapNode]
+    nodes: List[MindMapNode] 
