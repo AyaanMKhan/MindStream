@@ -19,7 +19,7 @@ class Edge(BaseModel):
     id: str
     source: str
     target: str
-    type: str
+    type: strAC
     animated: Optional[bool] = False
     style: Optional[dict] = {}
 

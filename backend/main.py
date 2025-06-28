@@ -181,7 +181,7 @@ def get_mindmap(id: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.post("/save-mindmap")
+@app.post("/api/save-mindmap")
 async def save_mindmap(mindmap: model.MindMap):
     doc = mindmap.dict()
     doc["created_at"] = datetime.utcnow()
