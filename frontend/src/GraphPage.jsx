@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ReactFlow, { 
   Background, 
@@ -9,11 +9,8 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-const initialNodes = [
-];
-
-const initialEdges = [
-];
+const initialNodes = [];
+const initialEdges = [];
 
 export default function GraphPage() {
   const [nodes, setNodes] = useState(initialNodes);
@@ -23,17 +20,35 @@ export default function GraphPage() {
   const [error, setError] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
+  const audioChunksRef = useRef([]);
+
+  // initialize recorder once
+  useEffect(() => {
+    async function initRecorder() {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = (e) => {
+        audioChunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const form = new FormData();
+        form.append('audio', blob);
+        fetch('/transcribe', { method: 'POST', body: form });
+      };
+      setMediaRecorder(recorder);
+    }
+    initRecorder();
+  }, []);
 
   const onNodesChange = useCallback(
     (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
     []
   );
-
   const onEdgesChange = useCallback(
     (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
     []
   );
-
   const onConnect = useCallback(
     (connection) => setEdges((eds) => addEdge(connection, eds)),
     []
@@ -44,57 +59,31 @@ export default function GraphPage() {
       setError('Please enter some text to generate a graph');
       return;
     }
-
     setIsLoading(true);
     setError('');
-
     try {
-      // Create transcript chunks from input text
-      const chunks = [
-        {
-          start: 0.0,
-          end: 100.0,
-          text: inputText
-        }
-      ];
-
-      // Send to backend
+      const chunks = [{ start: 0.0, end: 100.0, text: inputText }];
       const response = await fetch('http://localhost:8000/generate-map', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chunks }),
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const result = await response.json();
-      
-      // Convert backend nodes to ReactFlow format
-      const newNodes = result.nodes.map((node, index) => ({
+      const newNodes = result.nodes.map((node, i) => ({
         id: node.id,
         data: { label: node.text },
-        position: node.position || { x: 100 + (index % 3) * 200, y: 100 + Math.floor(index / 3) * 100 },
+        position: node.position || { x: 100 + (i % 3) * 200, y: 100 + Math.floor(i / 3) * 100 },
         type: node.node_type === 'input' ? 'input' : node.node_type === 'output' ? 'output' : 'default'
       }));
-
-      // Create edges based on parent-child relationships
       const newEdges = result.nodes
-        .filter(node => node.parent)
-        .map(node => ({
-          id: `e${node.parent}-${node.id}`,
-          source: node.parent,
-          target: node.id,
-        }));
-
+        .filter((n) => n.parent)
+        .map((n) => ({ id: `e${n.parent}-${n.id}`, source: n.parent, target: n.id }));
       setNodes(newNodes);
       setEdges(newEdges);
     } catch (err) {
       setError(`Error: ${err.message}`);
-      console.error('Error generating graph:', err);
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
@@ -125,7 +114,6 @@ export default function GraphPage() {
       </header>
 
       <main className="flex flex-1 flex-col px-10 py-5">
-        {/* Input Section */}
         <div className="max-w-4xl mx-auto w-full mb-6">
           <div className="text-center mb-6">
             <h1 className="text-4xl font-black mb-4 bg-gradient-to-r from-[#0b80ee] to-[#0ea5e9] bg-clip-text text-transparent">
@@ -150,10 +138,25 @@ export default function GraphPage() {
               />
             </div>
 
-            <div className='flex items-center justify-between colors-[#00000]'>
-                <button onClick={console.log("Click")}>Mic</button>
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => {
+                  if (!mediaRecorder) return;
+                  if (!isRecording) {
+                    audioChunksRef.current = [];
+                    mediaRecorder.start();
+                    setIsRecording(true);
+                  } else {
+                    mediaRecorder.stop();
+                    setIsRecording(false);
+                  }
+                }}
+                className="px-4 py-2 bg-[#0b80ee] rounded-lg font-medium"
+              >
+                {isRecording ? 'Stop' : 'Mic'}
+              </button>
             </div>
-            
+
             <div className="flex space-x-4">
               <button
                 onClick={handleGenerateGraph}
@@ -162,7 +165,7 @@ export default function GraphPage() {
               >
                 {isLoading ? 'Generating Graph...' : 'Generate Graph'}
               </button>
-              
+
               <button
                 onClick={handleClear}
                 className="bg-[#283139] hover:bg-[#3a4549] text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
@@ -170,7 +173,7 @@ export default function GraphPage() {
                 Clear
               </button>
             </div>
-            
+
             {error && (
               <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg">
                 {error}
@@ -179,9 +182,8 @@ export default function GraphPage() {
           </div>
         </div>
 
-        {/* Graph Section */}
         <div className="flex-1 max-w-6xl mx-auto w-full">
-          <div 
+          <div
             style={{
               width: '100%',
               height: '70vh',
@@ -193,7 +195,7 @@ export default function GraphPage() {
               position: 'relative'
             }}
           >
-            <div 
+            <div
               style={{
                 position: 'absolute',
                 top: 0,
@@ -213,16 +215,15 @@ export default function GraphPage() {
             >
               Interactive Graph Editor
             </div>
-            
-            <div 
+            <div
               style={{
                 width: '100%',
                 height: 'calc(100% - 40px)',
                 marginTop: '40px'
               }}
             >
-              <ReactFlow 
-                nodes={nodes} 
+              <ReactFlow
+                nodes={nodes}
                 edges={edges}
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
