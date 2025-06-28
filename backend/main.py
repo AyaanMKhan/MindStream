@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import traceback
@@ -91,7 +91,6 @@ async def transcribe(audio: UploadFile = File(...)):
     if not aai_key:
         raise HTTPException(500, "Missing ASSEMBLYAI_API_KEY")
     client = aai.Client(token=aai_key)
-    print(f"[transcribe] transcript text: {transcript.text!r}")
     # upload the audio to AAI
     upload_url = client.upload(contents)
 
