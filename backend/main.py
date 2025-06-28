@@ -182,10 +182,10 @@ def get_mindmap(id: str):
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/save-mindmap")
-async def save_mindmap(mindmap: MindMap):
+async def save_mindmap(mindmap: model.MindMap):
     doc = mindmap.dict()
     doc["created_at"] = datetime.utcnow()
-    result = collection.insert_one(doc)
+    result = col_mindmap.insert_one(doc)
     return {"status": "success", "inserted_id": str(result.inserted_id)}
 
 
