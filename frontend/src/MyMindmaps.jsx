@@ -34,13 +34,13 @@ export default function MyMindMaps() {
         ) : (
           <div className="grid gap-6 md:grid-cols-3 w-full max-w-5xl">
             {maps.map((map, i) => (
-              <Link to={`/mindmap/${map._id}`} key={map._id}>
+                <Link to={`/mindmap/${map._id}`} key={map._id}>
                 <div className="bg-[#1a1f24] border border-[#283139] rounded-xl h-40 flex items-center justify-center text-xl font-semibold text-[#0b80ee] hover:bg-[#22272e] transition">
-                  {map.title || `Mind Map #${i + 1}`}
+                    {`Mind Map #${i + 1}`}
                 </div>
-              </Link>
+                </Link>
             ))}
-          </div>
+           </div>
         )}
       </main>
     </div>
