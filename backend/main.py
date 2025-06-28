@@ -1,11 +1,9 @@
-from dotenv import load_dotenv
-load_dotenv()
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import traceback
-
+import os
+import assemblyai as aai
 from agent.controller import MindMapAgent
 from schemas.node import TranscriptChunk, MindMapNode, MapPayload, MapResponse
 
@@ -78,6 +76,35 @@ async def generate_map_fallback(payload: MapPayload):
         return {"result": agent.run_langchain_agent(...) }
     except:
         return {"nodes": agent.run()}
+
+@app.post("/transcribe")
+async def transcribe(audio: UploadFile = File(...)):
+    """
+    Receive an `audio` file blob, send it to AssemblyAI, and return the transcript.
+    """
+    # read the raw bytes
+    contents = await audio.read()
+    print(f"[transcribe] got {audio.filename!r}, {len(contents)} bytes")
+
+    # init AAI client
+    aai_key = os.getenv("ASSEMBLYAI_API_KEY")
+    if not aai_key:
+        raise HTTPException(500, "Missing ASSEMBLYAI_API_KEY")
+    client = aai.Client(token=aai_key)
+    print(f"[transcribe] transcript text: {transcript.text!r}")
+    # upload the audio to AAI
+    upload_url = client.upload(contents)
+
+    # kick off transcription
+    config = aai.TranscriptionConfig(speech_model=aai.SpeechModel.best)
+    transcript = client.transcriber.transcribe(upload_url, config=config)
+    print(f"[transcribe] transcript text: {transcript.text!r}")
+    # check for errors
+    if transcript.status == "error":
+        raise HTTPException(500, f"Transcription failed: {transcript.error}")
+
+    # return the text
+    return {"filename": audio.filename, "text": transcript.text}
 
 @app.get("/health")
 async def health_check():
