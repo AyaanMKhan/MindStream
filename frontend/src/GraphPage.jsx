@@ -140,6 +140,8 @@ export default function GraphPage() {
   const [error, setError] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [agentMode, setAgentMode] = useState('fast'); // 'fast' or 'langchain'
+  const [modeUsed, setModeUsed] = useState('');
   const audioChunksRef = useRef([]);
 
   // initialize recorder once
@@ -188,39 +190,65 @@ export default function GraphPage() {
     }
     setIsLoading(true);
     setError('');
+    setModeUsed('');
     try {
       const chunks = [{ start: 0.0, end: 100.0, text: inputText }];
-      const response = await fetch('http://localhost:8000/generate-map', {
+      const endpoint =
+        agentMode === 'langchain'
+          ? 'http://localhost:8000/generate-map/langchain'
+          : 'http://localhost:8000/generate-map';
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chunks }),
       });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const result = await response.json();
-      
-      // Convert backend nodes to ReactFlow format
-      const newNodes = result.nodes.map((node) => ({
-        id: node.id,
-        type: 'circular',
-        data: { label: node.text },
-        position: { x: 0, y: 0 }, // Will be set by Dagre layout
-      }));
-
-      // Create edges based on parent-child relationships
-      const newEdges = result.nodes
-        .filter((n) => n.parent)
-        .map((n) => ({ 
-          id: `e${n.parent}-${n.id}`, 
-          source: n.parent, 
-          target: n.id,
-          type: 'default',
-          animated: true,
-          style: { stroke: '#6b7280', strokeWidth: 2 }
+      let newNodes = [];
+      let newEdges = [];
+      if (agentMode === 'langchain') {
+        // Expecting result.result to be a list of nodes
+        if (Array.isArray(result.result)) {
+          newNodes = result.result.map((node) => ({
+            id: node.id,
+            type: 'circular',
+            data: { label: node.text },
+            position: { x: 0, y: 0 },
+          }));
+          newEdges = result.result
+            .filter((n) => n.parent)
+            .map((n) => ({
+              id: `e${n.parent}-${n.id}`,
+              source: n.parent,
+              target: n.id,
+              type: 'default',
+              animated: true,
+              style: { stroke: '#6b7280', strokeWidth: 2 },
+            }));
+        }
+        setModeUsed('LangChain Agent');
+      } else {
+        // Classic fast mode
+        newNodes = result.nodes.map((node) => ({
+          id: node.id,
+          type: 'circular',
+          data: { label: node.text },
+          position: { x: 0, y: 0 },
         }));
-
+        newEdges = result.nodes
+          .filter((n) => n.parent)
+          .map((n) => ({
+            id: `e${n.parent}-${n.id}`,
+            source: n.parent,
+            target: n.id,
+            type: 'default',
+            animated: true,
+            style: { stroke: '#6b7280', strokeWidth: 2 },
+          }));
+        setModeUsed('Classic Fallback');
+      }
       // Apply Dagre layout
       const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(newNodes, newEdges);
-      
       setNodes(layoutedNodes);
       setEdges(layoutedEdges);
     } catch (err) {
@@ -236,6 +264,7 @@ export default function GraphPage() {
     setNodes(initialNodes);
     setEdges(initialEdges);
     setError('');
+    setModeUsed('');
   };
 
   return (
@@ -280,6 +309,20 @@ export default function GraphPage() {
               />
             </div>
 
+            {/* Mode toggle dropdown */}
+            <div className="flex items-center gap-4">
+              <label htmlFor="agentMode" className="text-sm font-medium text-[#9cabba]">Mode:</label>
+              <select
+                id="agentMode"
+                value={agentMode}
+                onChange={e => setAgentMode(e.target.value)}
+                className="bg-[#283139] border border-[#3a4549] rounded-lg px-3 py-2 text-white"
+              >
+                <option value="fast">⚡ Fast Mode (classic)</option>
+                <option value="langchain">🧠 Smart Agent (LangChain)</option>
+              </select>
+            </div>
+
             <div className="flex items-center justify-between">
               <button
                 onClick={() => {
@@ -315,6 +358,12 @@ export default function GraphPage() {
                 Clear
               </button>
             </div>
+
+            {modeUsed && (
+              <div className="bg-blue-900/50 border border-blue-700 text-blue-300 px-4 py-3 rounded-lg">
+                Used: {modeUsed}
+              </div>
+            )}
 
             {error && (
               <div className="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg">
