@@ -34,6 +34,8 @@ async def startup():
     
     col_mindmap = db.database.mindmaps
     col_gallery = db.database.gallery
+    print(col_mindmap)
+
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -179,16 +181,16 @@ async def generate_map_fallback(payload: MapPayload):
     except:
         return {"nodes": agent.run()}
 
-@app.post("/mindmap")
+@app.post("/api/mindmap")
 def insert_mindmap(mindmap: model.MindMap):
     mindmapDict = mindmap.dict()
     result = col_mindmap.insert_one(mindmapDict)
     return {"inserted_id": str(result.inserted_id)}
 
-@app.get("/mindmap/{id}")
+@app.get("/api/mindmap/{id}")
 def get_mindmap(id: str):
     try:
-        result = collection.find_one({"_id": ObjectId(id)})
+        result = col_mindmap.find_one({"_id": ObjectId(id)})
         if not result:
             raise HTTPException(status_code=404, detail="MindMap not found")
         result["_id"] = str(result["_id"])

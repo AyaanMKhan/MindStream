@@ -2,6 +2,8 @@
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
+client = None
+database = None
 uri = "mongodb+srv://nagonzalez601:fOCPtYU4wzK3L2Ma@gemiknights.o3brlir.mongodb.net/?retryWrites=true&w=majority&appName=GemiKnights"
 
 
