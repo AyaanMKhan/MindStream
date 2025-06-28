@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import MindMap from './MindMap.jsx'
 import LandingPage from './LandingPage.jsx'
+import GraphPage from './GraphPage.jsx'
+
 
 function MindMapApp() {
   const [assemblyAIJson, setAssemblyAIJson] = useState('')
@@ -137,6 +139,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/mindmap" element={<MindMapApp />} />
+        <Route path="/graph" element={<GraphPage />} />
       </Routes>
     </Router>
   )
