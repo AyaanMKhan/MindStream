@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import MindMap from './MindMap.jsx'
+import LandingPage from './LandingPage.jsx'
 
-function App() {
+function MindMapApp() {
   const [assemblyAIJson, setAssemblyAIJson] = useState('')
   const [mindMapData, setMindMapData] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -53,6 +55,14 @@ function App() {
     <div className="flex flex-col min-h-screen">
       <div className="bg-white border-b border-gray-200 px-8 py-6">
         <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <Link to="/" className="flex items-center gap-2 text-primary-600 hover:text-primary-700 transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Home
+            </Link>
+          </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">MindStream</h1>
           <p className="text-lg text-gray-600 mb-6">
             Paste AssemblyAI JSON transcript to generate a mind map
@@ -121,4 +131,15 @@ function App() {
   )
 }
 
-export default App 
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/mindmap" element={<MindMapApp />} />
+      </Routes>
+    </Router>
+  )
+}
+
+export default App;
