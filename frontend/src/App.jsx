@@ -158,9 +158,7 @@ function MindMapApp() {
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <Link to="/" className="flex items-center gap-2 text-primary-600 hover:text-primary-700 transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
+              <img src="/MindStream.png" alt="MindStream Logo" className="w-10 h-10 bg-black p-1 object-contain" style={{borderRadius: 0}} />
               Back to Home
             </Link>
           </div>
