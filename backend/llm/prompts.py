@@ -2,16 +2,26 @@
 
 EXTRACT_PROMPT = """
 Extract hierarchical mind-map nodes from this transcript JSON.
-Return a JSON array of nodes with id, text, parent, importance (1-5), and node_type.
+Return ONLY a JSON object with a "nodes" array. Each node should have:
+- id: unique string identifier
+- text: the node content
+- parent: parent node id (null for root nodes)
+
+Do not include any code, explanations, or markdown formatting. Return only the JSON.
 
 Transcript:
 {transcript}
+
+Return format: {{"nodes": [{{"id": "1", "text": "...", "parent": null}}]}}
 """
 
 MERGE_PROMPT = """
 Merge newNodes into existingMap, avoiding duplicates.
-Assign each node an importance 1-5 based on mentions or action cues.
+
+Return ONLY a JSON object with the merged nodes. Do not include any code, explanations, or markdown formatting.
 
 ExistingMap: {existing}
 NewNodes:    {new}
+
+Return format: {{"nodes": [{{"id": "1", "text": "...", "parent": null}}]}}
 """ 

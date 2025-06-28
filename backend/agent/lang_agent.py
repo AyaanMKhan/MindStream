@@ -22,9 +22,13 @@ llm = ChatGoogleGenerativeAI(
     use_rest_api=True  # or client_type="rest" if your version requires
 )
 
+# Create agent with system message
 agent_executor = initialize_agent(
     langchain_tools,
     llm,
     agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
     verbose=True,
+    handle_parsing_errors=True,
+    max_iterations=5,
+    early_stopping_method="generate"
 )

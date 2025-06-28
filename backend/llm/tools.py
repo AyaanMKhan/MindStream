@@ -24,6 +24,7 @@ def extract_structure(chunks, model_name="models/gemini-1.5-flash-latest"):
       - dict with keys 'chunks' and optional 'model_name'
       - list of dicts or Pydantic objects
       - JSON or Python-literal string repr of either of the above
+      - plain text string (from LangChain)
     """
     # Handle case where chunks is passed as a dict from LangChain with 'chunks' and 'model_name' keys
     if isinstance(chunks, dict) and 'chunks' in chunks:
@@ -31,17 +32,20 @@ def extract_structure(chunks, model_name="models/gemini-1.5-flash-latest"):
         if 'model_name' in chunks:
             model_name = chunks['model_name']
         chunks = actual_chunks
-    # If we got a string, parse it first
+    # If we got a string, check if it's JSON or plain text
     elif isinstance(chunks, str):
         raw = chunks.strip().strip('`')
         try:
             parsed = json.loads(raw)
+            chunks = parsed
         except json.JSONDecodeError:
             try:
                 parsed = ast.literal_eval(raw)
-            except Exception as e:
-                raise ValueError(f"Failed to parse input string as JSON or Python literal: {raw}")
-        chunks = parsed
+                chunks = parsed
+            except Exception:
+                # If it's not JSON or Python literal, treat as plain text
+                # Create a single chunk from the text
+                chunks = [{"start": 0.0, "end": 100.0, "text": raw}]
     
     # Ensure each chunk is a dict (handle both Pydantic models and dicts)
     chunk_dicts = []
@@ -65,7 +69,7 @@ def extract_structure(chunks, model_name="models/gemini-1.5-flash-latest"):
     except json.JSONDecodeError:
         # Fallback: try to extract JSON from the response
         import re
-        json_match = re.search(r'\{.*\}', resp.text, re.DOTALL)
+        json_match = re.search(r'\{[^{}]*"nodes"[^{}]*\[[^\]]*\][^{}]*\}', resp.text, re.DOTALL)
         if json_match:
             try:
                 return json.loads(json_match.group())
@@ -73,12 +77,13 @@ def extract_structure(chunks, model_name="models/gemini-1.5-flash-latest"):
                 pass
         
         # If all else fails, return a simple structure
+        print(f"Could not parse extract JSON, returning fallback structure")
         return {
             "nodes": [
                 {
                     "id": "1",
                     "text": "Meeting Goals",
-                    "children": []
+                    "parent": None
                 }
             ]
         }
@@ -98,6 +103,10 @@ def merge_maps(existing, new_nodes, model_name="models/gemini-1.5-flash-latest")
             model_name = existing['model_name']
         existing = {}  # Start with empty existing map
     
+    # Handle case where new_nodes is the result from extract_structure
+    if isinstance(new_nodes, dict) and 'nodes' in new_nodes:
+        new_nodes = new_nodes['nodes']
+    
     prompt = MERGE_PROMPT.format(
         existing=json.dumps(existing),
         new=json.dumps(new_nodes)
@@ -114,4 +123,16 @@ def merge_maps(existing, new_nodes, model_name="models/gemini-1.5-flash-latest")
     try:
         return json.loads(cleaned)
     except Exception as e:
-        raise ValueError(f"Could not parse merged JSON: {e}\nCleaned output: {cleaned}")
+        # If JSON parsing fails, try to extract JSON from JavaScript code
+        try:
+            # Look for JSON object in the response
+            import re
+            json_match = re.search(r'\{[^{}]*"nodes"[^{}]*\[[^\]]*\][^{}]*\}', raw_resp, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group())
+        except:
+            pass
+        
+        # If all else fails, just return the new nodes as the merged result
+        print(f"Could not parse merged JSON, returning new nodes as fallback: {e}")
+        return {"nodes": new_nodes if isinstance(new_nodes, list) else []}

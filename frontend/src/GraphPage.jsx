@@ -211,16 +211,48 @@ export default function GraphPage() {
       let newNodes = [];
       let newEdges = [];
       if (agentMode === 'langchain') {
-        // Expecting result.result to be a list of nodes
-        if (Array.isArray(result.result)) {
-          newNodes = result.result.map((node) => ({
+        let nodesData = [];
+        console.log('LangChain result:', result.result);
+        console.log('Result type:', typeof result.result);
+
+        if (typeof result.result === 'string') {
+          // Attempt to extract JSON substring from the response
+          const jsonMatches = result.result.match(/\{[\s\S]*\}/g);
+          if (jsonMatches && jsonMatches.length > 0) {
+            for (let i = jsonMatches.length - 1; i >= 0; i--) {
+              try {
+                const obj = JSON.parse(jsonMatches[i]);
+                if (obj.nodes && Array.isArray(obj.nodes)) {
+                  nodesData = obj.nodes;
+                  break;
+                }
+              } catch (_) {
+                continue;
+              }
+            }
+          }
+        } else if (Array.isArray(result.result)) {
+          nodesData = result.result;
+        }
+
+        console.log('Final nodesData:', nodesData);
+
+        if (nodesData.length > 0) {
+          // Clean the data: convert Python 'None' strings to JavaScript null
+          const cleanedNodesData = nodesData.map(node => ({
+            id: node.id,
+            text: node.text,
+            parent: node.parent === 'None' || node.parent === null ? null : node.parent
+          }));
+          
+          newNodes = cleanedNodesData.map((node) => ({
             id: node.id,
             type: 'circular',
             data: { label: node.text },
             position: { x: 0, y: 0 },
           }));
-          newEdges = result.result
-            .filter((n) => n.parent)
+          newEdges = cleanedNodesData
+            .filter((n) => n.parent && n.parent !== 'None' && n.parent !== null)
             .map((n) => ({
               id: `e${n.parent}-${n.id}`,
               source: n.parent,
@@ -229,18 +261,29 @@ export default function GraphPage() {
               animated: true,
               style: { stroke: '#6b7280', strokeWidth: 2 },
             }));
+          
+          console.log('Created nodes:', newNodes);
+          console.log('Created edges:', newEdges);
         }
+
         setModeUsed('LangChain Agent');
       } else {
         // Classic fast mode
-        newNodes = result.nodes.map((node) => ({
+        // Clean the data: convert Python 'None' strings to JavaScript null
+        const cleanedNodes = result.nodes.map(node => ({
+          id: node.id,
+          text: node.text,
+          parent: node.parent === 'None' || node.parent === null ? null : node.parent
+        }));
+        
+        newNodes = cleanedNodes.map((node) => ({
           id: node.id,
           type: 'circular',
           data: { label: node.text },
           position: { x: 0, y: 0 },
         }));
-        newEdges = result.nodes
-          .filter((n) => n.parent)
+        newEdges = cleanedNodes
+          .filter((n) => n.parent && n.parent !== 'None' && n.parent !== null)
           .map((n) => ({
             id: `e${n.parent}-${n.id}`,
             source: n.parent,

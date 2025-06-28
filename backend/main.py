@@ -4,8 +4,10 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 import traceback
+import re
+import json
 
 from agent.controller import MindMapAgent
 from schemas.node import TranscriptChunk, MindMapNode, MapPayload, MapResponse
@@ -40,7 +42,13 @@ async def generate_map(payload: MapPayload):
     try:
         agent = MindMapAgent()
         agent.ingest_chunks(payload.chunks)
-        nodes_data = agent.run()
+        result = agent.run()
+
+        # Handle the result from agent.run() - it should return a dict with 'nodes'
+        if isinstance(result, dict) and 'nodes' in result:
+            nodes_data = result['nodes']
+        else:
+            nodes_data = result if isinstance(result, list) else []
 
         for node in nodes_data:
             node["id"] = str(node["id"])
@@ -67,10 +75,63 @@ async def generate_map_langchain(payload: MapPayload):
     try:
         agent = MindMapAgent()
         transcript_text = " ".join(chunk.text for chunk in payload.chunks)
-        user_query = f"Generate a mind map from this transcript:\n{transcript_text}"
+        
+        # More specific instruction that tells the agent how to use our tools
+        user_query = f"""You have access to two tools:
+1. extract_structure - Extract mind map nodes from transcript text
+2. merge_maps - Merge new nodes into an existing mind map
+
+To generate a mind map from this transcript, first use extract_structure to get the initial nodes, then use merge_maps to organize them.
+
+Transcript: {transcript_text}"""
 
         result = agent.run_langchain_agent(user_query)
-        return {"result": result}
+        
+        # Parse the LangChain result to extract the mind map nodes
+        print(f"LangChain result type: {type(result)}")
+        print(f"LangChain result: {result}")
+        
+        if isinstance(result, str):
+            # Try to extract JSON from the string response
+            try:
+                # Look for JSON object with nodes array (Python dict style)
+                match = re.search(r'\{[^{}]*nodes[^{}]*\[[^\]]*\][^{}]*\}', result, re.DOTALL)
+                if not match:
+                    match = re.search(r'\{[^{}]*\}', result, re.DOTALL)
+                if match:
+                    json_str = match.group(0)
+                    print(f"Extracted JSON: {json_str}")
+                    # Convert Python dict style to JSON
+                    json_str = (
+                        json_str.replace("'", '"')
+                                .replace('None', 'null')
+                                .replace('True', 'true')
+                                .replace('False', 'false')
+                    )
+                    parsed_data = json.loads(json_str)
+                    if 'nodes' in parsed_data and isinstance(parsed_data['nodes'], list):
+                        nodes = parsed_data['nodes']
+                        print(f"Found {len(nodes)} nodes")
+                        return {"result": nodes}
+                    else:
+                        print("No nodes array found in parsed data")
+                        return {"result": []}
+                else:
+                    print("No JSON found in result string")
+                    return {"result": []}
+            except Exception as parse_error:
+                print(f"Error parsing LangChain result: {parse_error}")
+                return {"result": []}
+        elif isinstance(result, dict) and 'nodes' in result:
+            # If result is already in the correct format
+            return {"result": result['nodes']}
+        elif isinstance(result, list):
+            # If result is already a list of nodes
+            return {"result": result}
+        else:
+            # Fallback: return empty result
+            print(f"Unexpected result format: {type(result)}")
+            return {"result": []}
 
     except Exception as e:
         tb = traceback.format_exc()
@@ -86,7 +147,9 @@ async def generate_map_fallback(payload: MapPayload):
     agent = MindMapAgent()
     try:
         agent.ingest_chunks(payload.chunks)
-        return {"result": agent.run_langchain_agent(...) }
+        transcript_text = " ".join(chunk.text for chunk in payload.chunks)
+        user_query = f"Generate a mind map from this transcript: {transcript_text}"
+        return {"result": agent.run_langchain_agent(user_query)}
     except:
         return {"nodes": agent.run()}
 
