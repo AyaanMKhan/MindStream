@@ -268,6 +268,38 @@ export default function GraphPage() {
   };
 
   return (
+    <>
+      <style>{`
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        
+        @keyframes bounce {
+          0%, 20%, 53%, 80%, 100% {
+            transform: translateY(0);
+          }
+          40%, 43% {
+            transform: translateY(-8px);
+          }
+          70% {
+            transform: translateY(-4px);
+          }
+        }
+        
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        
+        .animate-bounce {
+          animation: bounce 1s infinite;
+        }
+      `}</style>
+      
     <div className="relative flex w-full min-h-screen flex-col bg-[#111518] text-white" style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}>
       <header className="flex items-center justify-between border-b border-solid border-[#283139] px-10 py-3">
         <div className="flex items-center gap-4">
@@ -373,6 +405,7 @@ export default function GraphPage() {
           </div>
         </div>
 
+        {/* Graph Section */}
         <div className="flex-1 max-w-6xl mx-auto w-full">
           <div
             style={{
@@ -406,6 +439,59 @@ export default function GraphPage() {
             >
               Interactive Graph Editor
             </div>
+            
+            {/* Loading Overlay */}
+            {isLoading && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(26, 30, 35, 0.95)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 20
+                }}
+              >
+                <div className="text-center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  {/* Spinning loader */}
+                  <div 
+                    style={{
+                      width: '64px',
+                      height: '64px',
+                      border: '4px solid #283139',
+                      borderTop: '4px solid #0b80ee',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite',
+                      marginBottom: '24px'
+                    }}
+                  ></div>
+                  
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    Generating Mind Map
+                  </h3>
+                  <p className="text-[#9cabba] mb-4">
+                    {agentMode === 'langchain' ? 'Using Smart Agent (LangChain)...' : 'Using Fast Mode...'}
+                  </p>
+                  
+                  {/* Animated dots */}
+                  <div className="flex items-center justify-center space-x-1">
+                    <div className="w-2 h-2 bg-[#0b80ee] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-[#0b80ee] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-[#0b80ee] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                  
+                  <p className="text-sm text-[#9cabba] mt-4">
+                    AI is analyzing your text and creating connections...
+                  </p>
+                </div>
+              </div>
+            )}
+            
             <div
               style={{
                 width: '100%',
@@ -448,5 +534,6 @@ export default function GraphPage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }
