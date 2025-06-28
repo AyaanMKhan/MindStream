@@ -6,10 +6,10 @@ export default function AboutPage() {
     <div className="relative flex w-full min-h-screen flex-col bg-[#111518] text-white" style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}>
       <header className="flex items-center justify-between border-b border-solid border-[#283139] px-10 py-3">
         <div className="flex items-center gap-4">
-          <div className="h-10 w-10 flex-shrink-0">
+          <div className="h-24 w-24 flex-shrink-0 text-white">
             <img 
-              src="/src/generated-image.png" 
-              alt="MindStream Logo" 
+              src="/src/MindStream.png"
+              alt="MindStream logo"
               className="w-full h-full object-contain"
             />
           </div>
