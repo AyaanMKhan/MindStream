@@ -1,0 +1,42 @@
+[
+  {
+    "start": 0.0,
+    "end": 8.5,
+    "text": "Let's kick off the meeting by setting goals."
+  },
+  {
+    "start": 8.6,
+    "end": 20.3,
+    "text": "We want to build a mobile-first UI."
+  },
+  {
+    "start": 20.4,
+    "end": 35.0,
+    "text": "Alice will design wireframes by Thursday."
+  },
+  {
+    "start": 35.1,
+    "end": 50.2,
+    "text": "Bob is responsible for the backend API development."
+  },
+  {
+    "start": 50.3,
+    "end": 65.8,
+    "text": "We need to focus on user experience and accessibility."
+  },
+  {
+    "start": 65.9,
+    "end": 80.1,
+    "text": "The deadline for the first prototype is next Friday."
+  },
+  {
+    "start": 80.2,
+    "end": 95.5,
+    "text": "We should also consider performance optimization."
+  },
+  {
+    "start": 95.6,
+    "end": 110.0,
+    "text": "Testing will be handled by the QA team."
+  }
+] 
