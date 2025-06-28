@@ -27,10 +27,12 @@ export default function GalleryPage() {
     <div className="flex flex-col min-h-screen bg-[#111518] text-white" style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}>
       <header className="flex items-center justify-between border-b border-[#283139] px-10 py-3">
         <div className="flex items-center gap-4">
-          <div className="h-10 w-10 text-white">
-            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-full w-full">
-              <path d="M4 4H17.3334V17.3334H30.6666V30.6666H44V44H4V4Z" fill="currentColor" />
-            </svg>
+          <div className="h-24 w-24 flex-shrink-0 text-white">
+            <img 
+              src="/src/MindStream.png"
+              alt="MindStream logo"
+              className="w-full h-full object-contain"
+            />
           </div>
           <h2 className="text-lg font-bold tracking-tight">MindStream</h2>
         </div>
