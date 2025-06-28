@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -7,6 +10,7 @@ from agent.controller import MindMapAgent
 from schemas.node import TranscriptChunk, MindMapNode, MapPayload, MapResponse
 
 app = FastAPI()
+
 
 # CORS — allow your React app on localhost:3000
 app.add_middleware(

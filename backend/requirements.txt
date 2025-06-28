@@ -1,9 +1,9 @@
 # MindStream Backend Dependencies
-# Note: Python 3.11 or 3.12 recommended (Python 3.13 has compatibility issues with pydantic-core)
+# Python 3.11 or 3.12 recommended (Python 3.13 has compatibility issues with pydantic-core)
 
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
-pydantic==2.5.0
+pydantic>=2.7.4,<3.0.0
 python-multipart==0.0.6
 python-dotenv==1.0.0
-google-generativeai==0.3.2 
+google-generativeai>=0.8.0,<0.9.0
