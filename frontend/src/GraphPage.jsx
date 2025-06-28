@@ -508,7 +508,7 @@ export default function GraphPage() {
         }
       `}</style>
       
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-[#181c24] via-[#23243a] to-[#181c24] text-white relative overflow-hidden">
         {/* Animated background elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-20 left-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float"></div>
@@ -517,12 +517,14 @@ export default function GraphPage() {
         </div>
 
         {/* Header */}
-        <header className="relative z-10 glass-effect border-b border-white/10">
+        <header className="relative z-10 glass-effect border-b border-white/10 bg-gradient-to-br from-[#181c24] via-[#23243a] to-[#181c24]">
           <div className="max-w-7xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center animate-pulse-glow">
-                  <img src="src/MindStream.png" alt="MindStream Logo" className="w-15 h-15" />
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold gradient-text">MindStream</h1>
@@ -549,7 +551,7 @@ export default function GraphPage() {
           </div>
 
           {/* Control Panel */}
-          <div className="glass-effect rounded-2xl p-8 mb-8 shadow-2xl max-w-4xl mx-auto">
+          <div className="glass-effect rounded-2xl p-8 mb-8 shadow-2xl max-w-4xl mx-auto bg-[#23243a]/80 border border-[#2d2f4a]">
             <div className="space-y-8">
               {/* Audio Input Section */}
               <div className="text-center">
@@ -557,7 +559,7 @@ export default function GraphPage() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
                   {/* File Upload */}
-                  <div className="glass-effect rounded-xl p-6">
+                  <div className="glass-effect rounded-xl p-6 bg-[#23243a] border border-[#2d2f4a]">
                     <div className="text-center">
                       <input
                         ref={fileInputRef}
@@ -589,7 +591,7 @@ export default function GraphPage() {
                   </div>
 
                   {/* Voice Recording */}
-                  <div className="glass-effect rounded-xl p-6">
+                  <div className="glass-effect rounded-xl p-6 bg-[#23243a] border border-[#2d2f4a]">
                     <div className="text-center">
                       <span className="text-sm font-semibold text-gray-200 block mb-4">Voice Recording</span>
                       <button
@@ -651,7 +653,7 @@ export default function GraphPage() {
               {/* Status Section */}
               <div className="space-y-4 max-w-2xl mx-auto">
                 {transcribedText && (
-                  <div className="glass-effect rounded-xl p-6">
+                  <div className="glass-effect rounded-xl p-6 bg-[#23243a] border border-[#2d2f4a]">
                     <h4 className="font-semibold text-gray-200 mb-3 text-center">Transcribed Text</h4>
                     <div className="bg-black/20 rounded-lg p-4 max-h-48 overflow-y-auto">
                       <p className="text-sm text-gray-300 leading-relaxed">
@@ -698,7 +700,20 @@ export default function GraphPage() {
                   <div className="glass-effect border border-blue-500/30 text-blue-300 px-6 py-4 rounded-xl text-center">
                     <div className="flex items-center justify-center">
                       <span className="text-blue-400 mr-2">Agent</span>
-                      <span>used {toolLog.join(' ➝ ')} to form this mind map.</span>
+                      <span>
+                        used {toolLog.join(' ➝ ')} to form this mind map.
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {agentMode === 'langchain' && mcpToolCalls.length > 0 && (
+                  <div className="glass-effect border border-blue-500/30 text-blue-300 px-6 py-4 rounded-xl text-center">
+                    <div className="flex items-center justify-center">
+                      <span className="text-blue-400 mr-2">Agent</span>
+                      <span>
+                        used {mcpToolCalls.map(tc => tc.tool).join(' ➝ ')} to form this mind map.
+                      </span>
                     </div>
                   </div>
                 )}
@@ -726,58 +741,42 @@ export default function GraphPage() {
           </div>
 
           {/* Graph Section */}
-          <div className="glass-effect rounded-2xl shadow-2xl overflow-hidden">
-            <div className="h-96 relative">
-              {/* Loading Overlay */}
-              {isLoading && (
-                <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-                  <div className="text-center">
-                    <div className="w-20 h-20 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-6"></div>
-                    <h3 className="text-2xl font-bold text-white mb-2">
-                      Generating Mind Map
-                    </h3>
-                    <p className="text-gray-300 mb-4">
-                      {agentMode === 'langchain' ? 'Using Agentic AI (MCP)...' : 'Using Classic LLM...'}
-                    </p>
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce"></div>
-                      <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                      <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                    </div>
-                  </div>
+          <div className="flex justify-center items-center" style={{ minHeight: '90vh' }}>
+            <div className="glass-effect rounded-2xl shadow-2xl overflow-hidden bg-[#23243a] border border-[#2d2f4a] w-full max-w-6xl" style={{ height: '90vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div className="flex-1 flex flex-col justify-center">
+                <div className="h-full" style={{ minHeight: '70vh' }}>
+                  <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    nodeTypes={nodeTypes}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    fitView
+                    fitViewOptions={{
+                      padding: 0.3,
+                      includeHiddenNodes: false,
+                      minZoom: 0.4,
+                      maxZoom: 1.2,
+                    }}
+                    style={{ backgroundColor: 'transparent', height: '100%' }}
+                    defaultEdgeOptions={{
+                      type: 'smoothstep',
+                      animated: true,
+                      style: { stroke: '#667eea', strokeWidth: 3 },
+                    }}
+                  >
+                    <Background color="#667eea" gap={20} size={1} />
+                    <Controls className="glass-effect" />
+                  </ReactFlow>
                 </div>
-              )}
-              
-              <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                nodeTypes={nodeTypes}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                fitView
-                fitViewOptions={{
-                  padding: 0.3,
-                  includeHiddenNodes: false,
-                  minZoom: 0.4,
-                  maxZoom: 1.2,
-                }}
-                style={{ backgroundColor: 'transparent' }}
-                defaultEdgeOptions={{
-                  type: 'smoothstep',
-                  animated: true,
-                  style: { stroke: '#667eea', strokeWidth: 3 },
-                }}
-              >
-                <Background color="#667eea" gap={20} size={1} />
-                <Controls className="glass-effect" />
-              </ReactFlow>
+              </div>
             </div>
           </div>
         </main>
 
         {/* Footer */}
-        <footer className="relative z-10 glass-effect border-t border-white/10 mt-12">
+        <footer className="relative z-10 glass-effect border-t border-[#2d2f4a] mt-12 bg-[#181c24]">
           <div className="max-w-7xl mx-auto px-6 py-8 text-center">
             <p className="text-gray-400">
               Powered by cutting-edge AI technology • Transform your ideas into visual brilliance
