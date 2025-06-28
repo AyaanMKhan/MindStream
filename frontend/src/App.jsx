@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import MindMap from './MindMap.jsx'
 import LandingPage from './LandingPage.jsx'
 import GraphPage from './GraphPage.jsx'
+import GalleryPage from './Gallery.jsx'
 import AboutPage from './AboutPage.jsx'
 
 
@@ -143,6 +144,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/mindmap" element={<MindMapApp />} />
         <Route path="/graph" element={<GraphPage />} />
+        <Route path="/gallery" element={<GalleryPage />} />
         <Route path="/about" element={<AboutPage />} />
       </Routes>
     </Router>
