@@ -199,7 +199,11 @@ export default function GraphPage() {
           : 'http://localhost:8000/generate-map';
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
         body: JSON.stringify({ chunks }),
       });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);

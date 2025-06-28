@@ -3,7 +3,7 @@ from agent.tool_registry import TOOL_REGISTRY
 from agent.lang_agent import agent_executor
 
 class MindMapAgent:
-    def __init__(self, model_name="models/gemini-2.5-pro"):
+    def __init__(self, model_name="models/gemini-1.5-flash-latest"):
         self.buffer = TranscriptBuffer()
         self.model_name = model_name
 

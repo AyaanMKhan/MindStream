@@ -27,16 +27,28 @@ TOOL_REGISTRY = {
     ),
 }
 
+# Helper wrapper for LangChain to handle positional arguments correctly
+
+def merge_maps_tool(existing, new_nodes, model_name="models/gemini-1.5-flash-latest"):
+    """
+    Wrapper around merge_maps that accepts positional args for LangChain
+    """
+    return merge_maps(existing=existing, new_nodes=new_nodes, model_name=model_name)
+
 # ✅ LangChain-compatible tools
 langchain_tools = [
     LangChainTool.from_function(
         name="extract_structure",
-        func=lambda chunks, model_name="models/gemini-2.5-pro": extract_structure(chunks, model_name),
+        func=lambda chunks, model_name="models/gemini-1.5-flash-latest": extract_structure(chunks, model_name),
         description="Extract nodes from transcript chunks"
     ),
     LangChainTool.from_function(
         name="merge_maps",
-        func=lambda existing, new_nodes, model_name="models/gemini-2.5-pro": merge_maps(existing, new_nodes, model_name),
+        func=lambda *args, **kwargs: merge_maps(
+            existing=kwargs.get('existing', {}) or (args[0] if args else {}),
+            new_nodes=kwargs.get('new_nodes', []) or kwargs.get('nodes', []),
+            model_name=kwargs.get('model_name', 'models/gemini-1.5-flash-latest')
+        ),
         description="Merge nodes into a mind map"
     ),
 ]

@@ -4,6 +4,7 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.middleware.base import BaseHTTPMiddleware
 import traceback
 
 from agent.controller import MindMapAgent
@@ -11,6 +12,16 @@ from schemas.node import TranscriptChunk, MindMapNode, MapPayload, MapResponse
 
 app = FastAPI()
 
+# Add cache-busting middleware
+class NoCacheMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
+app.add_middleware(NoCacheMiddleware)
 
 # CORS — allow your React app on localhost:3000
 app.add_middleware(
