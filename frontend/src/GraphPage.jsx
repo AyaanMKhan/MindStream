@@ -368,7 +368,6 @@ export default function GraphPage() {
         </div>
         <div className="flex items-center gap-8">
           <Link to="/" className="text-sm font-medium hover:text-[#0b80ee] transition-colors">Home</Link>
-          <Link to="/mindmap" className="text-sm font-medium hover:text-[#0b80ee] transition-colors">Mind Map</Link>
         </div>
       </header>
 

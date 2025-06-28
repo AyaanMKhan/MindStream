@@ -36,8 +36,7 @@ export default function GalleryPage() {
         </div>
         <div className="flex items-center gap-8">
           <Link to="/" className="text-sm font-medium">Home</Link>
-          <Link to="/graph" className="text-sm font-medium hover:text-[#0b80ee] transition-colors">Graph</Link>
-          <Link to="/mindmap" className="h-10 rounded-full bg-[#0b80ee] px-4 text-sm font-bold flex items-center">Try It Now</Link>
+          <Link to="/graph" className="h-10 rounded-full bg-[#0b80ee] px-4 text-sm font-bold flex items-center">Try It Now</Link>
         </div>
       </header>
 

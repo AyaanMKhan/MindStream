@@ -142,7 +142,6 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/mindmap" element={<MindMapApp />} />
         <Route path="/graph" element={<GraphPage />} />
         <Route path="/gallery" element={<GalleryPage />} />
         <Route path="/about" element={<AboutPage />} />

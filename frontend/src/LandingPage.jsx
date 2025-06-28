@@ -14,9 +14,9 @@ export default function LandingPage() {
           <h2 className="text-lg font-bold tracking-tight">MindStream</h2>
         </div>
         <div className="flex items-center gap-8">
+          <Link to="/gallery" className='text-sm font-medium hover:text-[#0b80ee] transition-colors'>Gallery</Link>
           <Link to="/about" className="text-sm font-medium hover:text-[#0b80ee] transition-colors">About</Link>
-          <Link to="/graph" className="text-sm font-medium hover:text-[#0b80ee] transition-colors">Graph</Link>
-          <Link to="/mindmap" className="h-10 rounded-full bg-[#0b80ee] px-4 text-sm font-bold flex items-center">
+          <Link to="/graph" className="h-10 rounded-full bg-[#0b80ee] px-4 text-sm font-bold flex items-center">
             Try It Now
           </Link>
         </div>
@@ -35,7 +35,7 @@ export default function LandingPage() {
               relationships, identify patterns, and gain insights with our powerful
               visualization tools.
             </p>
-            <Link to="/mindmap" className="mt-4 h-10 rounded-full bg-[#0b80ee] px-4 text-sm font-bold flex items-center justify-center">
+            <Link to="/graph" className="mt-4 h-10 rounded-full bg-[#0b80ee] px-4 text-sm font-bold flex items-center justify-center">
               Try It Now
             </Link>
           </div>

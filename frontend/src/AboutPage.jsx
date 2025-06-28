@@ -15,8 +15,9 @@ export default function AboutPage() {
         </div>
         <div className="flex items-center gap-8">
           <Link to="/" className="text-sm font-medium hover:text-[#0b80ee] transition-colors">Home</Link>
-          <Link to="/graph" className="text-sm font-medium hover:text-[#0b80ee] transition-colors">Graph</Link>
-          <Link to="/mindmap" className="text-sm font-medium hover:text-[#0b80ee] transition-colors">Mind Map</Link>
+          <Link to="/graph" className="h-10 rounded-full bg-[#0b80ee] px-4 text-sm font-bold flex items-center">
+            Try It Now
+          </Link>
         </div>
       </header>
 
@@ -155,7 +156,7 @@ export default function AboutPage() {
                   Try Graph Generator
                 </Link>
                 <Link 
-                  to="/mindmap" 
+                  to="/gallery" 
                   className="bg-white/10 text-white border border-white/20 px-6 py-3 rounded-lg font-semibold hover:bg-white/20 transition-colors"
                 >
                   Explore Mind Maps
