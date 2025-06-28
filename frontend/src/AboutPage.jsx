@@ -6,10 +6,10 @@ export default function AboutPage() {
     <div className="relative flex w-full min-h-screen flex-col bg-[#111518] text-white" style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}>
       <header className="flex items-center justify-between border-b border-solid border-[#283139] px-10 py-3">
         <div className="flex items-center gap-4">
-          <div className="h-24 w-24 flex-shrink-0 text-white">
+          <div className="h-10 w-10 flex-shrink-0">
             <img 
-              src="/src/MindStream.png"
-              alt="MindStream logo"
+              src="/src/generated-image.png" 
+              alt="MindStream Logo" 
               className="w-full h-full object-contain"
             />
           </div>
@@ -17,9 +17,8 @@ export default function AboutPage() {
         </div>
         <div className="flex items-center gap-8">
           <Link to="/" className="text-sm font-medium hover:text-[#0b80ee] transition-colors">Home</Link>
-          <Link to="/graph" className="h-10 rounded-full bg-[#0b80ee] px-4 text-sm font-bold flex items-center">
-            Try It Now
-          </Link>
+          <Link to="/graph" className="text-sm font-medium hover:text-[#0b80ee] transition-colors">Graph</Link>
+          <Link to="/mindmap" className="text-sm font-medium hover:text-[#0b80ee] transition-colors">Mind Map</Link>
         </div>
       </header>
 
@@ -143,6 +142,37 @@ export default function AboutPage() {
             </div>
           </section>
 
+          {/* Sources Section */}
+          <section className="mb-16">
+            <h2 className="text-3xl font-bold mb-8 text-center">Research & Sources</h2>
+            <div className="bg-[#1a1e23] border border-[#283139] rounded-xl p-8">
+              <p className="text-lg text-[#9cabba] leading-relaxed mb-6 text-center">
+                The present study showed that metacognitive training using Mind Maps improves the ability to inhibit the response in children with ADHD
+              </p>
+              <div className="space-y-4">
+                <div className="border-l-4 border-[#0b80ee] pl-6">
+                  <h3 className="text-xl font-semibold mb-2">The Influence of Metacognitive Strategies on the Improvement of Reaction Inhibition Processes in Children with ADHD
+                  </h3>
+                  <p className="text-[#9cabba] mb-3">
+                    Research shows that visual representations and mind mapping significantly enhance 
+                    learning outcomes, memory retention, and knowledge organization.
+                  </p>
+                  <a 
+                    href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7908166/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-[#0b80ee] hover:text-[#0ea5e9] transition-colors font-medium"
+                  >
+                    <span>View Research Paper</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* CTA Section */}
           <section className="text-center">
             <div className="bg-gradient-to-r from-[#0b80ee] to-[#0ea5e9] rounded-xl p-8">
@@ -158,7 +188,7 @@ export default function AboutPage() {
                   Try Graph Generator
                 </Link>
                 <Link 
-                  to="/gallery" 
+                  to="/mindmap" 
                   className="bg-white/10 text-white border border-white/20 px-6 py-3 rounded-lg font-semibold hover:bg-white/20 transition-colors"
                 >
                   Explore Mind Maps
