@@ -181,6 +181,14 @@ def get_mindmap(id: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@app.post("/save-mindmap")
+async def save_mindmap(mindmap: MindMap):
+    doc = mindmap.dict()
+    doc["created_at"] = datetime.utcnow()
+    result = collection.insert_one(doc)
+    return {"status": "success", "inserted_id": str(result.inserted_id)}
+
+
 @app.post("/extract")
 def extract_structure_api(payload: MapPayload):
     return extract_structure(payload.chunks)
