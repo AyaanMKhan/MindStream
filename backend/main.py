@@ -1,11 +1,10 @@
-from dotenv import load_dotenv
-load_dotenv()
-
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 import traceback
+import os
+import assemblyai as aai
 import re
 import json
 
@@ -28,9 +27,9 @@ app.add_middleware(NoCacheMiddleware)
 # CORS — allow your React app on localhost:3000
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=False,
-    allow_methods=["*"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -173,6 +172,36 @@ async def generate_map_fallback(payload: MapPayload):
         return {"result": agent.run_langchain_agent(user_query)}
     except:
         return {"nodes": agent.run()}
+
+@app.post("/transcribe")
+async def transcribe(audio: UploadFile = File(...)):
+    """
+    Receive an `audio` file blob, send it to AssemblyAI, and return the transcript.
+    """
+    # read the raw bytes
+    contents = await audio.read()
+    print(f"[transcribe] got {audio.filename!r}, {len(contents)} bytes")
+
+    # set AAI API key
+    aai_key = os.getenv("ASSEMBLYAI_API_KEY")
+    print(f"[transcribe] aai_key: {aai_key}")
+    if not aai_key:
+        raise HTTPException(500, "Missing ASSEMBLYAI_API_KEY")
+    
+    aai.settings.api_key = aai_key
+
+    # kick off transcription directly with file content
+    config = aai.TranscriptionConfig(speech_model=aai.SpeechModel.best)
+    transcript = aai.Transcriber(config=config).transcribe(contents)
+    print(f"[transcribe] transcript text: {transcript.text!r}")
+    
+    # check for errors
+    if transcript.status == "error":
+        raise HTTPException(500, f"Transcription failed: {transcript.error}")
+
+    # return the text
+    return {"filename": audio.filename, "text": transcript.text}
+
 
 @app.get("/health")
 async def health_check():
