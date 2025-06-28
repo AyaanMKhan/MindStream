@@ -136,3 +136,19 @@ def merge_maps(existing, new_nodes, model_name="models/gemini-1.5-flash-latest")
         # If all else fails, just return the new nodes as the merged result
         print(f"Could not parse merged JSON, returning new nodes as fallback: {e}")
         return {"nodes": new_nodes if isinstance(new_nodes, list) else []}
+
+
+def get_memory(session_id, model_name="models/gemini-1.5-flash-latest"):
+    """
+    Get stored memory for a session.
+    """
+    from mcp.memory import agent_memory
+    return agent_memory.get(session_id, {})
+
+def set_memory(session_id, memory_data, model_name="models/gemini-1.5-flash-latest"):
+    """
+    Set memory for a session.
+    """
+    from mcp.memory import agent_memory
+    agent_memory[session_id] = memory_data
+    return {"status": "success", "session_id": session_id}

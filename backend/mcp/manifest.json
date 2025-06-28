@@ -2,6 +2,8 @@
   "schema_version": "v1",
   "components": [
     { "$ref": "./extract_structure.json" },
-    { "$ref": "./merge_maps.json" }
+    { "$ref": "./merge_maps.json" },
+    { "$ref": "./get_memory.json" },
+    { "$ref": "./set_memory.json" }
   ]
 }

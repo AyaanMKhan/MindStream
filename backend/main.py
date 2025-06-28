@@ -7,17 +7,18 @@ import os
 import assemblyai as aai
 import re
 import json
+import uuid
 from datetime import datetime
+
 from agent.controller import MindMapAgent
 from schemas.node import TranscriptChunk, MindMapNode, MapPayload, MapResponse
 
-from typing import List, Optional
 from utils import db
 from schemas import model
 from bson import ObjectId
 from fastapi.staticfiles import StaticFiles
 from fastapi import Body
-from llm.tools import extract_structure, merge_maps
+from llm.tools import extract_structure, merge_maps, get_memory, set_memory
 from agent.agent_mcp import MindMapAgentMCP
 from mcp.memory import agent_memory
 
@@ -27,7 +28,11 @@ import core.config
 app = FastAPI()
 app.mount("/mcp", StaticFiles(directory="mcp"), name="mcp")
 
-col_mindmap, col_gallery = None, None
+col_mindmap, col_gallery, col_transcripts = None, None, None
+
+# Configure AssemblyAI
+aai.settings.api_key = os.getenv("ASSEMBLYAI_API_KEY")
+
 # CORS — allow your React app on localhost:3000
 app.add_middleware(
     CORSMiddleware,
@@ -39,13 +44,14 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup():
-    global col_mindmap, col_gallery
+    global col_mindmap, col_gallery, col_transcripts
     await db.connect_db()
     if db.database is None:
         raise RuntimeError("❌ MongoDB failed to initialize on startup.")
     
     col_mindmap = db.database.mindmaps
     col_gallery = db.database.gallery
+    col_transcripts = db.database.transcripts
     print(col_mindmap)
 
 
@@ -98,7 +104,7 @@ async def generate_map_langchain(payload: MapPayload):
         transcript_text = " ".join(chunk["text"] for chunk in chunks)
         previous_map = agent_memory.get(session_id, {})
 
-        result = agent.run(transcript_text, previous_map)
+        result = agent.run(transcript_text, previous_map, session_id)
         print(f"🔍 MCP Agent result type: {type(result)}, value: {result}")
         
         # Handle dict result (from tool execution)
@@ -175,13 +181,310 @@ def get_mindmap(id: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.post("/api/save-mindmap")
-async def save_mindmap(mindmap: model.MindMap):
-    doc = mindmap.dict()
-    doc["created_at"] = datetime.utcnow()
-    result = col_mindmap.insert_one(doc)
-    return {"status": "success", "inserted_id": str(result.inserted_id)}
+@app.post("/extract")
+def extract_structure_api(payload: MapPayload):
+    return extract_structure(payload.chunks)
 
+@app.post("/merge")
+def merge_maps_api(payload: dict):
+    existing = payload.get("existing", {})
+    new_nodes = payload.get("new_nodes", [])
+    return merge_maps(existing, new_nodes)
+
+# AssemblyAI Audio Processing Endpoints
+@app.post("/upload-audio")
+async def upload_audio(file: UploadFile = File(...)):
+    """
+    Upload audio file and start AssemblyAI transcription
+    """
+    try:
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="No file provided")
+        
+        # Generate unique ID for this transcription
+        transcript_id = str(uuid.uuid4())
+        
+        # Save file temporarily
+        temp_path = f"/tmp/{transcript_id}_{file.filename}"
+        with open(temp_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        # Start AssemblyAI transcription
+        config = aai.TranscriptionConfig(
+            speaker_labels=True,
+            auto_chapters=True,
+            entity_detection=True
+        )
+        
+        transcript = aai.Transcriber().transcribe(temp_path, config)
+        
+        if transcript.status == aai.TranscriptStatus.error:
+            raise HTTPException(status_code=500, detail=f"Transcription failed: {transcript.error}")
+        
+        # Convert to our JSON format
+        chunks = []
+        for utterance in transcript.utterances:
+            chunks.append({
+                "start": utterance.start,
+                "end": utterance.end,
+                "text": utterance.text,
+                "speaker": utterance.speaker
+            })
+        
+        # Store in database
+        transcript_data = {
+            "_id": ObjectId(),
+            "transcript_id": transcript_id,
+            "filename": file.filename,
+            "chunks": chunks,
+            "raw_transcript": transcript.json,
+            "created_at": datetime.utcnow(),
+            "status": "completed"
+        }
+        
+        col_transcripts.insert_one(transcript_data)
+        
+        # Clean up temp file
+        os.remove(temp_path)
+        
+        return {
+            "transcript_id": transcript_id,
+            "status": "completed",
+            "chunks": chunks,
+            "message": "Audio transcribed successfully"
+        }
+        
+    except Exception as e:
+        tb = traceback.format_exc()
+        print(f"=== ERROR IN /upload-audio ===")
+        print(tb)
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e), "trace": tb}
+        )
+
+@app.get("/transcript/{transcript_id}")
+async def get_transcript(transcript_id: str):
+    """
+    Get stored transcript by ID
+    """
+    try:
+        transcript = col_transcripts.find_one({"transcript_id": transcript_id})
+        if not transcript:
+            raise HTTPException(status_code=404, detail="Transcript not found")
+        
+        transcript["_id"] = str(transcript["_id"])
+        return transcript
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
+        )
+
+@app.post("/generate-map-from-transcript/{transcript_id}")
+async def generate_map_from_transcript(transcript_id: str, payload: dict):
+    """
+    Generate mind map from stored transcript
+    """
+    try:
+        # Get transcript from database
+        transcript = col_transcripts.find_one({"transcript_id": transcript_id})
+        if not transcript:
+            raise HTTPException(status_code=404, detail="Transcript not found")
+        
+        # Use the stored chunks
+        chunks = transcript["chunks"]
+        
+        # Create MapPayload
+        map_payload = MapPayload(
+            session_id=payload.get("session_id", str(uuid.uuid4())),
+            chunks=[TranscriptChunk(**chunk) for chunk in chunks]
+        )
+        
+        # Use existing mind map generation logic
+        agent = MindMapAgent()
+        agent.ingest_chunks(map_payload.chunks)
+        result = agent.run()
+
+        # Handle the result from agent.run() - it should return a dict with 'nodes'
+        if isinstance(result, dict) and 'nodes' in result:
+            nodes_data = result['nodes']
+        else:
+            nodes_data = result if isinstance(result, list) else []
+
+        for node in nodes_data:
+            node["id"] = str(node["id"])
+            if node.get("parent") is not None:
+                node["parent"] = str(node["parent"])
+
+        nodes = [MindMapNode(**node) for node in nodes_data]
+        return MapResponse(nodes=nodes)
+
+    except Exception as e:
+        tb = traceback.format_exc()
+        print("=== ERROR IN /generate-map-from-transcript ===")
+        print(tb)
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e), "trace": tb}
+        )
+
+@app.post("/transcribe")
+async def transcribe_audio(audio: UploadFile = File(...)):
+    """
+    Transcribe audio blob from MediaRecorder and return JSON format for mind map generation
+    """
+    try:
+        if not audio.filename:
+            raise HTTPException(status_code=400, detail="No audio file provided")
+        
+        # Generate unique ID for this transcription
+        transcript_id = str(uuid.uuid4())
+        
+        # Save file temporarily
+        temp_path = f"/tmp/{transcript_id}_{audio.filename}"
+        with open(temp_path, "wb") as buffer:
+            content = await audio.read()
+            buffer.write(content)
+        
+        print(f"🎤 Processing audio file: {temp_path}")
+        
+        # Start AssemblyAI transcription
+        config = aai.TranscriptionConfig(
+            speaker_labels=True,
+            auto_chapters=True,
+            entity_detection=True
+        )
+        
+        transcript = aai.Transcriber().transcribe(temp_path, config)
+        
+        if transcript.status == aai.TranscriptStatus.error:
+            raise HTTPException(status_code=500, detail=f"Transcription failed: {transcript.error}")
+        
+        print(f"✅ Transcription completed for {transcript_id}")
+        
+        # Convert to our JSON format
+        chunks = []
+        for utterance in transcript.utterances:
+            chunks.append({
+                "start": utterance.start,
+                "end": utterance.end,
+                "text": utterance.text,
+                "speaker": utterance.speaker
+            })
+        
+        # Manually convert transcript object to dictionary
+        raw_transcript_dict = {
+            "id": transcript.id,
+            "status": transcript.status,
+            "audio_url": transcript.audio_url,
+            "text": transcript.text,
+            "confidence": transcript.confidence,
+            "audio_duration": transcript.audio_duration,
+            "utterances": [
+                {
+                    "start": u.start,
+                    "end": u.end,
+                    "text": u.text,
+                    "speaker": u.speaker,
+                    "confidence": u.confidence
+                } for u in transcript.utterances
+            ] if transcript.utterances else [],
+            "chapters": [
+                {
+                    "start": c.start,
+                    "end": c.end,
+                    "headline": c.headline,
+                    "summary": c.summary,
+                    "gist": c.gist
+                } for c in transcript.chapters
+            ] if transcript.chapters else [],
+            "entities": [
+                {
+                    "text": e.text,
+                    "entity_type": e.entity_type,
+                    "start": e.start,
+                    "end": e.end
+                } for e in transcript.entities
+            ] if transcript.entities else []
+        }
+        
+        # Store in database
+        transcript_data = {
+            "_id": ObjectId(),
+            "transcript_id": transcript_id,
+            "filename": audio.filename,
+            "chunks": chunks,
+            "raw_transcript": raw_transcript_dict,
+            "created_at": datetime.utcnow(),
+            "status": "completed"
+        }
+        
+        col_transcripts.insert_one(transcript_data)
+        
+        # Clean up temp file
+        os.remove(temp_path)
+        
+        # Return the format expected by the frontend
+        return {
+            "transcript_id": transcript_id,
+            "status": "completed",
+            "chunks": chunks,
+            "message": "Audio transcribed successfully",
+            "text": " ".join([chunk["text"] for chunk in chunks])  # Full text for display
+        }
+        
+    except Exception as e:
+        tb = traceback.format_exc()
+        print(f"=== ERROR IN /transcribe ===")
+        print(tb)
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e), "trace": tb}
+        )
+
+# MCP Memory Management Endpoints
+@app.post("/get-memory")
+async def get_memory_api(payload: dict):
+    """
+    Get memory for a session (MCP tool endpoint)
+    """
+    try:
+        session_id = payload.get("session_id")
+        if not session_id:
+            raise HTTPException(status_code=400, detail="session_id is required")
+        
+        result = get_memory(session_id)
+        return result
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
+        )
+
+@app.post("/set-memory")
+async def set_memory_api(payload: dict):
+    """
+    Set memory for a session (MCP tool endpoint)
+    """
+    try:
+        session_id = payload.get("session_id")
+        memory_data = payload.get("memory_data", {})
+        
+        if not session_id:
+            raise HTTPException(status_code=400, detail="session_id is required")
+        
+        result = set_memory(session_id, memory_data)
+        return result
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
+        )
 
 @app.get("/health")
 async def health_check():
@@ -231,14 +534,4 @@ def try_parse_outline(text_outline):
     if nodes:
         return {"nodes": nodes}
     return None
-
-@app.post("/extract")
-def extract_structure_api(payload: MapPayload):
-    return extract_structure(payload.chunks)
-
-@app.post("/merge")
-def merge_maps_api(payload: dict):
-    existing = payload.get("existing", {})
-    new_nodes = payload.get("new_nodes", [])
-    return merge_maps(existing, new_nodes)
 

@@ -1,5 +1,6 @@
 annotated-types==0.7.0
 anyio==3.7.1
+assemblyai==0.21.0
 cachetools==5.5.2
 certifi==2025.6.15
 charset-normalizer==3.4.2
