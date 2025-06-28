@@ -15,8 +15,7 @@ from utils import db
 from schemas import model
 from bson import ObjectId
 app = FastAPI()
-col_mindmap = db.mindmaps
-col_gallery = db.gallery
+col_mindmap, col_gallery = None, None
 # CORS — allow your React app on localhost:3000
 app.add_middleware(
     CORSMiddleware,
@@ -26,6 +25,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+async def startup():
+    global col_mindmap, col_gallery
+    await db.connect_db()
+    if db.database is None:
+        raise RuntimeError("❌ MongoDB failed to initialize on startup.")
+    
+    col_mindmap = db.database.mindmaps
+    col_gallery = db.database.gallery
+
+@app.on_event("shutdown")
+async def shutdown():
+    await db.shutdown_db()
 
 @app.post("/generate-map", response_model=MapResponse)
 async def generate_map(payload: MapPayload):
@@ -168,13 +180,13 @@ async def generate_map_fallback(payload: MapPayload):
         return {"nodes": agent.run()}
 
 @app.post("/mindmap")
-def insert_mindmap():
+def insert_mindmap(mindmap: model.MindMap):
     mindmapDict = mindmap.dict()
     result = col_mindmap.insert_one(mindmapDict)
     return {"inserted_id": str(result.inserted_id)}
 
 @app.get("/mindmap/{id}")
-def get_mindmap():
+def get_mindmap(id: str):
     try:
         result = collection.find_one({"_id": ObjectId(id)})
         if not result:
