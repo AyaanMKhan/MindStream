@@ -27,9 +27,9 @@ app.add_middleware(NoCacheMiddleware)
 # CORS — allow your React app on localhost:3000
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=False,
-    allow_methods=["*"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -182,24 +182,26 @@ async def transcribe(audio: UploadFile = File(...)):
     contents = await audio.read()
     print(f"[transcribe] got {audio.filename!r}, {len(contents)} bytes")
 
-    # init AAI client
+    # set AAI API key
     aai_key = os.getenv("ASSEMBLYAI_API_KEY")
+    print(f"[transcribe] aai_key: {aai_key}")
     if not aai_key:
         raise HTTPException(500, "Missing ASSEMBLYAI_API_KEY")
-    client = aai.Client(token=aai_key)
-    # upload the audio to AAI
-    upload_url = client.upload(contents)
+    
+    aai.settings.api_key = aai_key
 
-    # kick off transcription
+    # kick off transcription directly with file content
     config = aai.TranscriptionConfig(speech_model=aai.SpeechModel.best)
-    transcript = client.transcriber.transcribe(upload_url, config=config)
+    transcript = aai.Transcriber(config=config).transcribe(contents)
     print(f"[transcribe] transcript text: {transcript.text!r}")
+    
     # check for errors
     if transcript.status == "error":
         raise HTTPException(500, f"Transcription failed: {transcript.error}")
 
     # return the text
     return {"filename": audio.filename, "text": transcript.text}
+
 
 @app.get("/health")
 async def health_check():
