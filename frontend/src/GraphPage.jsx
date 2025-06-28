@@ -27,15 +27,22 @@ export default function GraphPage() {
     async function initRecorder() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
+
       recorder.ondataavailable = (e) => {
+        console.log('➤ ondataavailable chunk:', e.data, 'size:', e.data.size);
         audioChunksRef.current.push(e.data);
+        console.log('  → total chunks now:', audioChunksRef.current.length);
       };
+
       recorder.onstop = () => {
+        console.log('➤ recorder stopped, chunks:', audioChunksRef.current.length);
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        console.log('  → final blob size:', blob.size, 'bytes');
         const form = new FormData();
         form.append('audio', blob);
         fetch('/transcribe', { method: 'POST', body: form });
       };
+
       setMediaRecorder(recorder);
     }
     initRecorder();
@@ -74,7 +81,11 @@ export default function GraphPage() {
         id: node.id,
         data: { label: node.text },
         position: node.position || { x: 100 + (i % 3) * 200, y: 100 + Math.floor(i / 3) * 100 },
-        type: node.node_type === 'input' ? 'input' : node.node_type === 'output' ? 'output' : 'default'
+        type: node.node_type === 'input'
+          ? 'input'
+          : node.node_type === 'output'
+          ? 'output'
+          : 'default'
       }));
       const newEdges = result.nodes
         .filter((n) => n.parent)
