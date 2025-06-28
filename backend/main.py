@@ -188,6 +188,16 @@ async def save_mindmap(mindmap: model.MindMap):
     result = col_mindmap.insert_one(doc)
     return {"status": "success", "inserted_id": str(result.inserted_id)}
 
+@app.get("/api/mindmap")
+def get_all_mindmaps():
+    try:
+        mindmaps = list(col_mindmap.find({}, {"_id": 1, "title": 1}))
+        for m in mindmaps:
+            m["_id"] = str(m["_id"])
+        return mindmaps
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/extract")
 def extract_structure_api(payload: MapPayload):
