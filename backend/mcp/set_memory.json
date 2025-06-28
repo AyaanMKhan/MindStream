@@ -1,0 +1,19 @@
+{
+  "name": "set_memory",
+  "description": "Stores mind map memory for a specific session",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "session_id": {
+        "type": "string",
+        "description": "Unique session identifier to store memory for"
+      },
+      "memory_data": {
+        "type": "object",
+        "description": "Mind map data to store in memory (nodes, metadata, etc.)"
+      }
+    },
+    "required": ["session_id", "memory_data"]
+  },
+  "run_url": "http://localhost:8000/set-memory"
+} 

@@ -1,0 +1,15 @@
+{
+  "name": "get_memory",
+  "description": "Retrieves stored mind map memory for a specific session",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "session_id": {
+        "type": "string",
+        "description": "Unique session identifier to retrieve memory for"
+      }
+    },
+    "required": ["session_id"]
+  },
+  "run_url": "http://localhost:8000/get-memory"
+} 
