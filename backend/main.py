@@ -11,19 +11,12 @@ import json
 from agent.controller import MindMapAgent
 from schemas.node import TranscriptChunk, MindMapNode, MapPayload, MapResponse
 
+from utils import db
+from schemas import model
+from bson import ObjectId
 app = FastAPI()
-
-# Add cache-busting middleware
-class NoCacheMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        response = await call_next(request)
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-        response.headers["Pragma"] = "no-cache"
-        response.headers["Expires"] = "0"
-        return response
-
-app.add_middleware(NoCacheMiddleware)
-
+col_mindmap = db.mindmaps
+col_gallery = db.gallery
 # CORS — allow your React app on localhost:3000
 app.add_middleware(
     CORSMiddleware,
@@ -32,6 +25,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
 
 @app.post("/generate-map", response_model=MapResponse)
 async def generate_map(payload: MapPayload):
@@ -173,38 +167,32 @@ async def generate_map_fallback(payload: MapPayload):
     except:
         return {"nodes": agent.run()}
 
-@app.post("/transcribe")
-async def transcribe(audio: UploadFile = File(...)):
-    """
-    Receive an `audio` file blob, send it to AssemblyAI, and return the transcript.
-    """
-    # read the raw bytes
-    contents = await audio.read()
-    print(f"[transcribe] got {audio.filename!r}, {len(contents)} bytes")
+@app.post("/mindmap")
+def insert_mindmap():
+    mindmapDict = mindmap.dict()
+    result = col_mindmap.insert_one(mindmapDict)
+    return {"inserted_id": str(result.inserted_id)}
 
-    # set AAI API key
-    aai_key = os.getenv("ASSEMBLYAI_API_KEY")
-    print(f"[transcribe] aai_key: {aai_key}")
-    if not aai_key:
-        raise HTTPException(500, "Missing ASSEMBLYAI_API_KEY")
-    
-    aai.settings.api_key = aai_key
-
-    # kick off transcription directly with file content
-    config = aai.TranscriptionConfig(speech_model=aai.SpeechModel.best)
-    transcript = aai.Transcriber(config=config).transcribe(contents)
-    print(f"[transcribe] transcript text: {transcript.text!r}")
-    
-    # check for errors
-    if transcript.status == "error":
-        raise HTTPException(500, f"Transcription failed: {transcript.error}")
-
-    # return the text
-    return {"filename": audio.filename, "text": transcript.text}
-
+@app.get("/mindmap/{id}")
+def get_mindmap():
+    try:
+        result = collection.find_one({"_id": ObjectId(id)})
+        if not result:
+            raise HTTPException(status_code=404, detail="MindMap not found")
+        result["_id"] = str(result["_id"])
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/health")
 async def health_check():
+    if db.database is None:
+        raise HTTPException(status_code=500, detail="MongoDB not initialized.")
+    try:
+        db.client.admin.command("ping")
+        return {"status": "✅ MongoDB connected"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MongoDB error: {e}")
     return {"status": "healthy", "message": "MindStream API is running"}
 
 def try_parse_outline(text_outline):
