@@ -1,4 +1,3 @@
-
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
@@ -21,6 +20,11 @@ async def close_db():
     if client:
         client.close()
         print("MongoDB connection closed")
+
+async def shutdown_db():
+    # Optionally close MongoDB connection if needed
+    pass
+
 # Create a new client and connect to the server
 # client = MongoClient(uri, server_api=ServerApi('1'))
 # db = client.GemiHacks

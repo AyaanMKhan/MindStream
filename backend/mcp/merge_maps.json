@@ -1,0 +1,17 @@
+{
+  "name": "merge_maps",
+  "description": "Merges new mind map nodes into an existing structure",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "existing": { "type": "object", "description": "Current mind map" },
+      "new_nodes": {
+        "type": "array",
+        "description": "Nodes to be added",
+        "items": { "type": "object" }
+      }
+    },
+    "required": ["existing", "new_nodes"]
+  },
+  "run_url": "http://localhost:8000/merge"
+}
