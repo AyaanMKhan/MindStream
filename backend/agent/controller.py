@@ -1,6 +1,5 @@
 from data.transcript_buffer import TranscriptBuffer
 from agent.tool_registry import TOOL_REGISTRY
-from agent.lang_agent import agent_executor
 
 class MindMapAgent:
     def __init__(self, model_name="models/gemini-1.5-flash-latest"):
@@ -31,6 +30,3 @@ class MindMapAgent:
 
         self.buffer.update_map(merged)
         return merged
-    
-    def run_langchain_agent(self, user_query: str):
-        return agent_executor.run(user_query)

@@ -21,6 +21,7 @@ class MindMapNode(BaseModel):
     parent:     Optional[str] = None
 
 class MapPayload(BaseModel):
+    session_id: str
     chunks: List[TranscriptChunk]
 
 class MapResponse(BaseModel):

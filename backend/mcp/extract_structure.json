@@ -1,0 +1,24 @@
+{
+  "name": "extract_structure",
+  "description": "Extracts mind map nodes from transcript chunks",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "chunks": {
+        "type": "array",
+        "description": "Transcript segments to analyze",
+        "items": {
+          "type": "object",
+          "properties": {
+            "start": { "type": "number" },
+            "end": { "type": "number" },
+            "text": { "type": "string" }
+          },
+          "required": ["start", "end", "text"]
+        }
+      }
+    },
+    "required": ["chunks"]
+  },
+  "run_url": "http://localhost:8000/extract"
+}

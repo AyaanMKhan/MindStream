@@ -142,6 +142,7 @@ export default function GraphPage() {
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [agentMode, setAgentMode] = useState('fast'); // 'fast' or 'langchain'
   const [modeUsed, setModeUsed] = useState('');
+  const [toolLog, setToolLog] = useState([]); // 🧠 Tool execution log
   const audioChunksRef = useRef([]);
 
   // initialize recorder once
@@ -200,8 +201,12 @@ export default function GraphPage() {
     setIsLoading(true);
     setError('');
     setModeUsed('');
+    setToolLog([]);
     try {
+      // Use a fixed or random session_id for now
+      const session_id = 'demo-session'; // You can use uuid or user/session-based logic
       const chunks = [{ start: 0.0, end: 100.0, text: inputText }];
+      const payload = { session_id, chunks };
       const endpoint =
         agentMode === 'langchain'
           ? 'http://localhost:8000/generate-map/langchain'
@@ -213,10 +218,21 @@ export default function GraphPage() {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
         },
-        body: JSON.stringify({ chunks }),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const result = await response.json();
+
+      // Tool log extraction (from backend response)
+      if (result.tool_log && Array.isArray(result.tool_log)) {
+        setToolLog(result.tool_log);
+      } else {
+        // Fallback: if not present, guess based on mode
+        setToolLog(agentMode === 'langchain'
+          ? ['extract_structure', 'merge_maps']
+          : ['extract_structure', 'merge_maps']);
+      }
+
       let newNodes = [];
       let newEdges = [];
       if (agentMode === 'langchain') {
@@ -320,6 +336,7 @@ export default function GraphPage() {
       setEdges(layoutedEdges);
     } catch (err) {
       setError(`Error: ${err.message}`);
+      setToolLog([]);
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -460,6 +477,13 @@ export default function GraphPage() {
             {modeUsed && (
               <div className="bg-blue-900/50 border border-blue-700 text-blue-300 px-4 py-3 rounded-lg">
                 Used: {modeUsed}
+              </div>
+            )}
+
+            {/* Tool log display */}
+            {agentMode === 'langchain' && toolLog.length > 0 && (
+              <div className="bg-blue-900/50 border border-blue-700 text-blue-300 px-4 py-3 rounded-lg mb-2">
+                🧠 Agent used {toolLog.join(' ➝ ')} to form this mind map.
               </div>
             )}
 
