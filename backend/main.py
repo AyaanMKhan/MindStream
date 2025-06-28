@@ -115,13 +115,34 @@ Transcript: {transcript_text}"""
                         return {"result": nodes}
                     else:
                         print("No nodes array found in parsed data")
-                        return {"result": []}
+                        # Fallback: try to parse as outline
+                        nodes_json = try_parse_outline(result)
+                        if nodes_json:
+                            return {"result": nodes_json["nodes"]}
+                        return JSONResponse(
+                            status_code=500,
+                            content={"error": "AI did not return a valid mind map. Please try again or rephrase your input."}
+                        )
                 else:
                     print("No JSON found in result string")
-                    return {"result": []}
+                    # Fallback: try to parse as outline
+                    nodes_json = try_parse_outline(result)
+                    if nodes_json:
+                        return {"result": nodes_json["nodes"]}
+                    return JSONResponse(
+                        status_code=500,
+                        content={"error": "AI did not return a valid mind map. Please try again or rephrase your input."}
+                    )
             except Exception as parse_error:
                 print(f"Error parsing LangChain result: {parse_error}")
-                return {"result": []}
+                # Fallback: try to parse as outline
+                nodes_json = try_parse_outline(result)
+                if nodes_json:
+                    return {"result": nodes_json["nodes"]}
+                return JSONResponse(
+                    status_code=500,
+                    content={"error": "AI did not return a valid mind map. Please try again or rephrase your input."}
+                )
         elif isinstance(result, dict) and 'nodes' in result:
             # If result is already in the correct format
             return {"result": result['nodes']}
@@ -156,3 +177,39 @@ async def generate_map_fallback(payload: MapPayload):
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "message": "MindStream API is running"}
+
+def try_parse_outline(text_outline):
+    """
+    Try to parse a text outline (tree structure) into a nodes JSON format.
+    Returns a dict with a 'nodes' key if successful, else None.
+    """
+    lines = [line for line in text_outline.splitlines() if line.strip()]
+    nodes = []
+    stack = []  # Stack of (id, indent_level)
+    id_counter = 1
+
+    for line in lines:
+        # Count indentation (number of leading spaces or special chars)
+        indent = len(re.match(r"^[\s│]*", line).group(0).replace("│", "    "))
+        # Remove outline characters
+        clean_text = re.sub(r"^[\s│]*[├└]──\s*", "", line).strip()
+        if not clean_text:
+            continue
+        node_id = str(id_counter)
+        id_counter += 1
+
+        # Find parent based on indentation
+        while stack and stack[-1][1] >= indent:
+            stack.pop()
+        parent_id = stack[-1][0] if stack else None
+
+        nodes.append({
+            "id": node_id,
+            "text": clean_text,
+            "parent": parent_id
+        })
+        stack.append((node_id, indent))
+
+    if nodes:
+        return {"nodes": nodes}
+    return None
