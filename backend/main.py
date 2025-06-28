@@ -212,17 +212,19 @@ def try_parse_outline(text_outline):
     Try to parse a text outline (tree structure) into a nodes JSON format.
     Returns a dict with a 'nodes' key if successful, else None.
     """
+    import re
     lines = [line for line in text_outline.splitlines() if line.strip()]
     nodes = []
     stack = []  # Stack of (id, indent_level)
     id_counter = 1
 
     for line in lines:
-        # Count indentation (number of leading spaces or special chars)
-        indent = len(re.match(r"^[\s│]*", line).group(0).replace("│", "    "))
-        # Remove outline characters
-        clean_text = re.sub(r"^[\s│]*[├└]──\s*", "", line).strip()
-        if not clean_text:
+        # Normalize: replace tree characters with spaces
+        norm_line = line.replace('├', ' ').replace('└', ' ').replace('│', ' ')
+        # Count indentation (number of leading spaces)
+        indent = len(norm_line) - len(norm_line.lstrip(' '))
+        clean_text = norm_line.strip('- ').strip()
+        if not clean_text or clean_text == "...":
             continue
         node_id = str(id_counter)
         id_counter += 1
