@@ -3,7 +3,7 @@ from agent.tool_registry import TOOL_REGISTRY
 from agent.lang_agent import agent_executor
 
 class MindMapAgent:
-    def __init__(self, model_name="models/gemini-2.5-pro"):
+    def __init__(self, model_name="models/gemini-1.5-flash-latest"):
         self.buffer = TranscriptBuffer()
         self.model_name = model_name
 
@@ -18,7 +18,13 @@ class MindMapAgent:
         merge_tool = TOOL_REGISTRY["merge"]
 
         # extract_structure(chunks, model_name)
-        new_nodes = extract_tool.run(chunks, self.model_name)
+        extract_result = extract_tool.run(chunks, self.model_name)
+        
+        # Handle the result from extract_structure
+        if isinstance(extract_result, dict) and 'nodes' in extract_result:
+            new_nodes = extract_result['nodes']
+        else:
+            new_nodes = extract_result
 
         # merge_maps(existing, new_nodes, model_name)
         merged = merge_tool.run(prior_map, new_nodes, self.model_name)

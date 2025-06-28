@@ -18,10 +18,7 @@ class TranscriptChunk(BaseModel):
 class MindMapNode(BaseModel):
     id:         str
     text:       str
-    parent:     Optional[str]          = None
-    position:   Optional[Dict[str, float]] = None
-    importance: Optional[int]          = 1
-    node_type:  Optional[str]          = "default"
+    parent:     Optional[str] = None
 
 class MapPayload(BaseModel):
     chunks: List[TranscriptChunk]

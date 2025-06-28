@@ -1,14 +1,28 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 import traceback
 import os
 import assemblyai as aai
+import re
+import json
+
 from agent.controller import MindMapAgent
 from schemas.node import TranscriptChunk, MindMapNode, MapPayload, MapResponse
 
 app = FastAPI()
 
+# Add cache-busting middleware
+class NoCacheMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
+app.add_middleware(NoCacheMiddleware)
 
 # CORS — allow your React app on localhost:3000
 app.add_middleware(
@@ -27,7 +41,13 @@ async def generate_map(payload: MapPayload):
     try:
         agent = MindMapAgent()
         agent.ingest_chunks(payload.chunks)
-        nodes_data = agent.run()
+        result = agent.run()
+
+        # Handle the result from agent.run() - it should return a dict with 'nodes'
+        if isinstance(result, dict) and 'nodes' in result:
+            nodes_data = result['nodes']
+        else:
+            nodes_data = result if isinstance(result, list) else []
 
         for node in nodes_data:
             node["id"] = str(node["id"])
@@ -54,10 +74,84 @@ async def generate_map_langchain(payload: MapPayload):
     try:
         agent = MindMapAgent()
         transcript_text = " ".join(chunk.text for chunk in payload.chunks)
-        user_query = f"Generate a mind map from this transcript:\n{transcript_text}"
+        
+        # More specific instruction that tells the agent how to use our tools
+        user_query = f"""You have access to two tools:
+1. extract_structure - Extract mind map nodes from transcript text
+2. merge_maps - Merge new nodes into an existing mind map
+
+To generate a mind map from this transcript, first use extract_structure to get the initial nodes, then use merge_maps to organize them.
+
+Transcript: {transcript_text}"""
 
         result = agent.run_langchain_agent(user_query)
-        return {"result": result}
+        
+        # Parse the LangChain result to extract the mind map nodes
+        print(f"LangChain result type: {type(result)}")
+        print(f"LangChain result: {result}")
+        
+        if isinstance(result, str):
+            # Try to extract JSON from the string response
+            try:
+                # Look for JSON object with nodes array (Python dict style)
+                match = re.search(r'\{[^{}]*nodes[^{}]*\[[^\]]*\][^{}]*\}', result, re.DOTALL)
+                if not match:
+                    match = re.search(r'\{[^{}]*\}', result, re.DOTALL)
+                if match:
+                    json_str = match.group(0)
+                    print(f"Extracted JSON: {json_str}")
+                    # Convert Python dict style to JSON
+                    json_str = (
+                        json_str.replace("'", '"')
+                                .replace('None', 'null')
+                                .replace('True', 'true')
+                                .replace('False', 'false')
+                    )
+                    parsed_data = json.loads(json_str)
+                    if 'nodes' in parsed_data and isinstance(parsed_data['nodes'], list):
+                        nodes = parsed_data['nodes']
+                        print(f"Found {len(nodes)} nodes")
+                        return {"result": nodes}
+                    else:
+                        print("No nodes array found in parsed data")
+                        # Fallback: try to parse as outline
+                        nodes_json = try_parse_outline(result)
+                        if nodes_json:
+                            return {"result": nodes_json["nodes"]}
+                        return JSONResponse(
+                            status_code=500,
+                            content={"error": "AI did not return a valid mind map. Please try again or rephrase your input."}
+                        )
+                else:
+                    print("No JSON found in result string")
+                    # Fallback: try to parse as outline
+                    nodes_json = try_parse_outline(result)
+                    if nodes_json:
+                        return {"result": nodes_json["nodes"]}
+                    return JSONResponse(
+                        status_code=500,
+                        content={"error": "AI did not return a valid mind map. Please try again or rephrase your input."}
+                    )
+            except Exception as parse_error:
+                print(f"Error parsing LangChain result: {parse_error}")
+                # Fallback: try to parse as outline
+                nodes_json = try_parse_outline(result)
+                if nodes_json:
+                    return {"result": nodes_json["nodes"]}
+                return JSONResponse(
+                    status_code=500,
+                    content={"error": "AI did not return a valid mind map. Please try again or rephrase your input."}
+                )
+        elif isinstance(result, dict) and 'nodes' in result:
+            # If result is already in the correct format
+            return {"result": result['nodes']}
+        elif isinstance(result, list):
+            # If result is already a list of nodes
+            return {"result": result}
+        else:
+            # Fallback: return empty result
+            print(f"Unexpected result format: {type(result)}")
+            return {"result": []}
 
     except Exception as e:
         tb = traceback.format_exc()
@@ -73,7 +167,9 @@ async def generate_map_fallback(payload: MapPayload):
     agent = MindMapAgent()
     try:
         agent.ingest_chunks(payload.chunks)
-        return {"result": agent.run_langchain_agent(...) }
+        transcript_text = " ".join(chunk.text for chunk in payload.chunks)
+        user_query = f"Generate a mind map from this transcript: {transcript_text}"
+        return {"result": agent.run_langchain_agent(user_query)}
     except:
         return {"nodes": agent.run()}
 
@@ -108,3 +204,39 @@ async def transcribe(audio: UploadFile = File(...)):
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "message": "MindStream API is running"}
+
+def try_parse_outline(text_outline):
+    """
+    Try to parse a text outline (tree structure) into a nodes JSON format.
+    Returns a dict with a 'nodes' key if successful, else None.
+    """
+    lines = [line for line in text_outline.splitlines() if line.strip()]
+    nodes = []
+    stack = []  # Stack of (id, indent_level)
+    id_counter = 1
+
+    for line in lines:
+        # Count indentation (number of leading spaces or special chars)
+        indent = len(re.match(r"^[\s│]*", line).group(0).replace("│", "    "))
+        # Remove outline characters
+        clean_text = re.sub(r"^[\s│]*[├└]──\s*", "", line).strip()
+        if not clean_text:
+            continue
+        node_id = str(id_counter)
+        id_counter += 1
+
+        # Find parent based on indentation
+        while stack and stack[-1][1] >= indent:
+            stack.pop()
+        parent_id = stack[-1][0] if stack else None
+
+        nodes.append({
+            "id": node_id,
+            "text": clean_text,
+            "parent": parent_id
+        })
+        stack.append((node_id, indent))
+
+    if nodes:
+        return {"nodes": nodes}
+    return None

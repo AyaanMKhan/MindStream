@@ -1,7 +1,10 @@
-{
-  "chunks": [
-    { "start": 0.0,  "end": 5.0,  "text": "Let's kick off the meeting by setting goals." },
-    { "start": 5.1,  "end": 15.0, "text": "We want to build a mobile-first UI." },
-    { "start": 15.1, "end": 25.0, "text": "Alice will design wireframes by Thursday." }
-  ]
-}
+[
+  { "start": 0.0, "end": 5.0, "text": "Let's begin the strategy sync by outlining our main objectives." },
+  { "start": 5.1, "end": 15.0, "text": "Our primary goal is to launch the v2 platform by October." },
+  { "start": 15.1, "end": 22.0, "text": "That means finalizing backend scaling by August 15th." },
+  { "start": 22.1, "end": 30.0, "text": "Emily will lead backend optimization, focusing on Redis caching." },
+  { "start": 30.1, "end": 38.0, "text": "Meanwhile, the frontend team—led by Arjun—will finalize the new onboarding flow." },
+  { "start": 38.1, "end": 45.0, "text": "QA testing begins in September, handled by an external vendor." },
+  { "start": 45.1, "end": 52.0, "text": "Post-launch, we’ll prioritize feature usage analytics and retention funnels." },
+  { "start": 52.1, "end": 58.0, "text": "By Q1 next year, we aim to have experiment-based personalization rolled out." }
+]
