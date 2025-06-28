@@ -7,10 +7,11 @@ import os
 import assemblyai as aai
 import re
 import json
-
+from datetime import datetime
 from agent.controller import MindMapAgent
 from schemas.node import TranscriptChunk, MindMapNode, MapPayload, MapResponse
 
+from typing import List, Optional
 from utils import db
 from schemas import model
 from bson import ObjectId
@@ -197,6 +198,14 @@ def get_mindmap(id: str):
         return result
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/save-mindmap")
+async def save_mindmap(mindmap: model.MindMap):
+    doc = mindmap.dict()
+    doc["created_at"] = datetime.utcnow()
+    result = col_mindmap.insert_one(doc)
+    return {"status": "success", "inserted_id": str(result.inserted_id)}
+
 
 @app.get("/health")
 async def health_check():

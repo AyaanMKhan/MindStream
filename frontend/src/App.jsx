@@ -5,7 +5,7 @@ import LandingPage from './LandingPage.jsx'
 import GraphPage from './GraphPage.jsx'
 import GalleryPage from './Gallery.jsx'
 import AboutPage from './AboutPage.jsx'
-
+import MyMindMaps from './MyMindmaps.jsx'
 
 function MindMapApp() {
   const [assemblyAIJson, setAssemblyAIJson] = useState('')
@@ -145,6 +145,7 @@ function App() {
         <Route path="/graph" element={<GraphPage />} />
         <Route path="/gallery" element={<GalleryPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/mymindmaps" element={<MyMindMaps />}/>
       </Routes>
     </Router>
   )

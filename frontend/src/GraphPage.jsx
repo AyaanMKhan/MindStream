@@ -305,6 +305,17 @@ export default function GraphPage() {
       }
       // Apply Dagre layout
       const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(newNodes, newEdges);
+      await fetch('http://localhost:8000/api/save-mindmap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: inputText.slice(0, 100), // Optional: small title
+          modeUsed,
+          nodes: layoutedNodes,
+          edges: layoutedEdges,
+          timestamp: new Date().toISOString(),
+        })
+      });
       setNodes(layoutedNodes);
       setEdges(layoutedEdges);
     } catch (err) {
