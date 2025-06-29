@@ -188,7 +188,7 @@ export default function AboutPage() {
                   Try Graph Generator
                 </Link>
                 <Link 
-                  to="/mindmap" 
+                  to="/mymindmaps" 
                   className="bg-white/10 text-white border border-white/20 px-6 py-3 rounded-lg font-semibold hover:bg-white/20 transition-colors"
                 >
                   Explore Mind Maps

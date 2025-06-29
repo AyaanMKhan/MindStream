@@ -98,7 +98,7 @@ export default function MindMapView() {
       <header className="flex items-center justify-between border-b border-[#283139] px-10 py-3">
         <h2 className="text-lg font-bold">MindStream</h2>
         <Link
-          to="/my-mindmaps"
+          to="/mymindmaps"
           className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full transition-all duration-300 text-sm font-medium backdrop-blur-sm ml-4"
         >
           My Mindmaps

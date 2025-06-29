@@ -198,6 +198,15 @@ def get_all_mindmaps():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/gallery")
+def get_all_gallery_maps():
+    try:
+        gallery_maps = list(col_gallery.find({}, {"_id": 1, "title": 1}))
+        for m in gallery_maps:
+            m["_id"] = str(m["_id"])
+        return gallery_maps
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/extract")
 def extract_structure_api(payload: MapPayload):

@@ -21,7 +21,16 @@ export default function MyMindMaps() {
   return (
     <div className="flex flex-col min-h-screen bg-[#111518] text-white" style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}>
       <header className="flex items-center justify-between border-b border-[#283139] px-10 py-3">
-        <h2 className="text-lg font-bold">MindStream</h2>
+        <div className="flex items-center gap-4">
+          <div className="h-24 w-24 flex-shrink-0 text-white">
+            <img 
+              src="/src/MindStream.png"
+              alt="MindStream logo"
+              className="w-full h-full object-contain"
+            />
+          </div>
+          <h2 className="text-lg font-bold tracking-tight">MindStream</h2>
+        </div>
         <Link to="/" className="text-sm font-medium hover:text-[#0b80ee]">Home</Link>
       </header>
 

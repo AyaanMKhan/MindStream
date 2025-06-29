@@ -1,28 +1,23 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const galleryItems = [
-  {
-    id: 'mindmap1',
-    title: 'Brainstorm Session',
-    description: 'A mind map for brainstorming creative ideas.',
-    image: 'https://via.placeholder.com/300x180?text=Mind+Map+1',
-  },
-  {
-    id: 'mindmap2',
-    title: 'Project Roadmap',
-    description: 'Visual layout of a project timeline and goals.',
-    image: 'https://via.placeholder.com/300x180?text=Mind+Map+2',
-  },
-  {
-    id: 'mindmap3',
-    title: 'Startup Strategy',
-    description: 'Planning out the key aspects of a startup idea.',
-    image: 'https://via.placeholder.com/300x180?text=Mind+Map+3',
-  },
-];
-
 export default function GalleryPage() {
+  const [galleryItems, setGalleryItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/api/gallery')
+      .then(res => res.json())
+      .then(data => {
+        setGalleryItems(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        setGalleryItems([]);
+        setLoading(false);
+      });
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen bg-[#111518] text-white" style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}>
       <header className="flex items-center justify-between border-b border-[#283139] px-10 py-3">
@@ -45,23 +40,22 @@ export default function GalleryPage() {
       <main className="flex flex-col items-center justify-center flex-1 px-10 py-16">
         <h1 className="text-4xl font-bold mb-4 text-center">Explore Our Mind Map Gallery</h1>
         <p className="text-[#9cabba] mb-12 max-w-xl text-center">Click on any mind map to explore it interactively.</p>
-        
-        <div className="grid gap-8 md:grid-cols-3 w-full max-w-6xl">
-          {galleryItems.map((item) => (
-            <Link to={`/mindmap/${item.id}`} key={item.id} className="group hover:scale-[1.02] transition-transform">
-              <div className="bg-[#1a1f24] rounded-xl overflow-hidden shadow-md">
-                <div
-                  className="aspect-video bg-cover bg-center"
-                  style={{ backgroundImage: `url('${item.image}')` }}
-                />
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold">{item.title}</h3>
-                  <p className="text-sm text-[#9cabba] mt-1">{item.description}</p>
+        {loading ? (
+          <div className="text-[#9cabba] text-lg">Loading gallery...</div>
+        ) : galleryItems.length === 0 ? (
+          <div className="text-[#9cabba] text-lg">No mind maps found in the gallery.</div>
+        ) : (
+          <div className="grid gap-8 md:grid-cols-3 w-full max-w-6xl">
+            {galleryItems.map((item, i) => (
+              <Link to={`/mindmap/${item._id}`} key={item._id} className="group hover:scale-[1.02] transition-transform">
+                <div className="bg-[#1a1f24] rounded-xl overflow-hidden shadow-md h-48 flex flex-col justify-center items-center p-6">
+                  <h3 className="text-lg font-semibold mb-2">{`Mind Map #${i + 1}`}</h3>
+                  {item.description && <p className="text-sm text-[#9cabba] mt-1">{item.description}</p>}
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </main>
 
       <footer className="flex justify-center bg-[#111518] py-10">
