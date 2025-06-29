@@ -174,6 +174,7 @@ export default function GraphPage() {
   const [uploadedFile, setUploadedFile] = useState(null);
   const audioChunksRef = useRef([]);
   const fileInputRef = useRef(null);
+  const [isGeneratingMap, setIsGeneratingMap] = useState(false);
 
   // initialize recorder once
   useEffect(() => {
@@ -225,8 +226,10 @@ export default function GraphPage() {
       
       setTranscribedText(data.text || '');
       setTranscriptionStatus('completed');
+      setIsGeneratingMap(true);
       
       await generateMindMapFromTranscription(data.chunks);
+      setIsGeneratingMap(false);
       
     } catch (err) {
       console.error('Transcribe error:', err);
@@ -271,8 +274,12 @@ export default function GraphPage() {
       
       setTranscribedText(data.text || '');
       setTranscriptionStatus('completed');
+      setIsGeneratingMap(true);
       
+      // Generate mind map and save to DB
       await generateMindMapFromTranscription(data.chunks);
+      setIsGeneratingMap(false);
+      // The above function already posts to /api/save-mindmap after generating the mind map
       
     } catch (err) {
       console.error('File upload error:', err);
@@ -286,13 +293,11 @@ export default function GraphPage() {
       setError('No transcription data available');
       return;
     }
-    
     setIsLoading(true);
     setError('');
     setModeUsed('');
     setToolLog([]);
     setMcpToolCalls([]);
-    
     try {
       const session_id = 'demo-session';
       const payload = { session_id, chunks };
@@ -300,7 +305,6 @@ export default function GraphPage() {
         agentMode === 'langchain'
           ? 'http://localhost:8000/generate-map/langchain'
           : 'http://localhost:8000/generate-map';
-          
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -310,7 +314,6 @@ export default function GraphPage() {
         },
         body: JSON.stringify(payload),
       });
-      
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const result = await response.json();
 
@@ -521,17 +524,24 @@ export default function GraphPage() {
           <div className="max-w-7xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center animate-pulse-glow">
-                  <img src="src/MindStream.png" alt="MindStream Logo" className="w-15 h-15" />
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center animate-pulse-glow">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold gradient-text">MindStream</h1>
                   <p className="text-sm text-gray-300">AI-Powered Mind Mapping</p>
                 </div>
               </div>
-              <Link to="/" className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full transition-all duration-300 text-sm font-medium backdrop-blur-sm">
-                Back to Home
-              </Link>
+              <div className="flex items-center space-x-4">
+                <Link to="/" className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full transition-all duration-300 text-sm font-medium backdrop-blur-sm">
+                  Back to Home
+                </Link>
+                <Link to="/mymindmaps" className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full transition-all duration-300 text-sm font-medium backdrop-blur-sm">
+                  My Mindmaps
+                </Link>
+              </div>
             </div>
           </div>
         </header>
@@ -694,28 +704,6 @@ export default function GraphPage() {
                   </div>
                 )}
 
-                {agentMode === 'langchain' && toolLog.length > 0 && !mcpToolCalls.length && (
-                  <div className="glass-effect border border-blue-500/30 text-blue-300 px-6 py-4 rounded-xl text-center">
-                    <div className="flex items-center justify-center">
-                      <span className="text-blue-400 mr-2">Agent</span>
-                      <span>
-                        used {toolLog.join(' ➝ ')} to form this mind map.
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {agentMode === 'langchain' && mcpToolCalls.length > 0 && (
-                  <div className="glass-effect border border-blue-500/30 text-blue-300 px-6 py-4 rounded-xl text-center">
-                    <div className="flex items-center justify-center">
-                      <span className="text-blue-400 mr-2">Agent</span>
-                      <span>
-                        used {mcpToolCalls.map(tc => tc.tool).join(' ➝ ')} to form this mind map.
-                      </span>
-                    </div>
-                  </div>
-                )}
-
                 {error && (
                   <div className="glass-effect border border-red-500/30 text-red-300 px-6 py-4 rounded-xl text-center">
                     <div className="flex items-center justify-center">
@@ -754,10 +742,10 @@ export default function GraphPage() {
                     fitViewOptions={{
                       padding: 0.3,
                       includeHiddenNodes: false,
-                      minZoom: 0.4,
-                      maxZoom: 1.2,
+                      minZoom: 0.00001,
+                      maxZoom: 10,
                     }}
-                    style={{ backgroundColor: 'transparent', height: '100%' }}
+                    style={{ backgroundColor: 'transparent', height: '100%', width: '100%' }}
                     defaultEdgeOptions={{
                       type: 'smoothstep',
                       animated: true,
@@ -781,6 +769,25 @@ export default function GraphPage() {
             </p>
           </div>
         </footer>
+
+        {(isLoading || isGeneratingMap) && (
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="text-center">
+              <div className="w-20 h-20 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-6"></div>
+              <h3 className="text-2xl font-bold text-white mb-2">
+                Generating Mind Map
+              </h3>
+              <p className="text-gray-300 mb-4">
+                {agentMode === 'langchain' ? 'Using Agentic AI (MCP)...' : 'Using Classic LLM...'}
+              </p>
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce"></div>
+                <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
