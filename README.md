@@ -190,6 +190,7 @@ This is especially helpful for:
 
 - 💻 Sujan Katari (Agent design, Backend, MCP integration)
 - 💻 Ayaan Khan (Frontend, UI/UX Design, Graph Visualization)
+- 💻 Nicholas Gonzalez (Backend, MongoDB Atlas AWS Integration, FastAPI Integration)
 - ⚙️ Gemini 1.5 (Google Generative AI)
 - 📚 Powered by MCP and inspiration from LangChain & LangGraph agent systems
 
