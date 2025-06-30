@@ -188,7 +188,8 @@ This is especially helpful for:
 
 ## 👏 Team + Credit
 
-- 💻 Sujan Katari (Agent design, frontend, backend, MCP integration)
+- 💻 Sujan Katari (Agent design, Backend, MCP integration)
+- 💻 Ayaan Khan (Frontend, UI/UX Design, Graph Visualization)
 - ⚙️ Gemini 1.5 (Google Generative AI)
 - 📚 Powered by MCP and inspiration from LangChain & LangGraph agent systems
 
