@@ -42,7 +42,81 @@ Gemini becomes an agent with tools it can call during its reasoning:
 
 Gemini uses these tools **autonomously** as it reasons, chunk-by-chunk, building better structured, deeper maps for long or complex transcripts.
 
+![image](https://github.com/user-attachments/assets/d598cb4b-21bf-42e9-a291-bb2b8d9498f3)
+
 ---
+
+## 🗂️ Project Structure
+
+🗂️ MindStream
+├── 📄 .gitignore  
+├── 📄 package-lock.json  
+├── 📄 package.json  
+├── 📄 README.md  
+├── ⚙️ start.bat  
+├── ⚙️ start.sh  
+
+  ├── 🐍 backend  
+    │   ├── 📄 main.py  
+    │   ├── 📄 requirements.txt  
+    │   ├── 📄 test_input.json  
+    │   │  
+    │   ├── 🧩 agent  
+    │   │   ├── 🤖 agent_mcp.py  
+    │   │   ├── 🎛️ controller.py  
+    │   │   ├── 📝 scratchpad.py  
+    │   │   └── 🛠️ tool_registry.py  
+    │   │  
+    │   ├── ⚙️ core  
+    │   │   └── 📄 config.py  
+    │   │  
+    │   ├── 🗃️ data  
+    │   │   └── 📄 transcript_buffer.py  
+    │   │  
+    │   ├── 🧠 llm  
+    │   │   ├── 🔌 client.py  
+    │   │   ├── ✨ prompts.py  
+    │   │   └── 🛠️ tools.py  
+    │   │  
+    │   ├── 🗂️ mcp  
+    │   │   ├── 📄 extract_structure.json  
+    │   │   ├── 📄 get_memory.json  
+    │   │   ├── 📄 manifest.json  
+    │   │   ├── 🧩 memory.py  
+    │   │   ├── 📄 merge_maps.json  
+    │   │   └── 📄 set_memory.json  
+    │   │  
+    │   ├── 📐 schemas  
+    │   │   ├── 🗃️ model.py  
+    │   │   ├── 🗃️ node.py  
+    │   │   └── 📄 __init__.py  
+    │   │  
+    │   └── 🛠️ utils  
+    │       ├── 🗄️ db.py  
+    │       └── 🧰 helpers.py  
+  
+  └── ⚛️ frontend  
+      ├── 📄 index.html  
+      ├── 📄 package-lock.json  
+      ├── 📄 package.json  
+      ├── ⚙️ postcss.config.js  
+      ├── ⚙️ tailwind.config.js  
+      ├── ⚙️ vite.config.js  
+      │  
+      └── 💻 src  
+          ├── 📄 AboutPage.jsx  
+          ├── 📄 App.jsx  
+          ├── 🖼️ Gallery.jsx  
+          ├── 🗺️ GraphPage.jsx  
+          ├── 🎨 index.css  
+          ├── 📄 index.jsx  
+          ├── 🏠 LandingPage.jsx  
+          ├── 🧩 MindMap.jsx  
+          ├── 🗺️ MindMapView.jsx  
+          ├── 🖼️ MindStream.png  
+          └── 📄 MyMindmaps.jsx  
+
+
 
 ## 👩‍💻 Tech Stack
 
