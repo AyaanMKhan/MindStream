@@ -772,8 +772,8 @@ export default function GraphPage() {
 
         {(isLoading || isGeneratingMap) && (
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="text-center">
-              <div className="w-20 h-20 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-6"></div>
+            <div className="flex flex-col items-center justify-center text-center">
+              <div className="w-20 h-20 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-6 mx-auto"></div>
               <h3 className="text-2xl font-bold text-white mb-2">
                 Generating Mind Map
               </h3>
