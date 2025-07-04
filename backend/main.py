@@ -9,6 +9,10 @@ import re
 import json
 import uuid
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from agent.controller import MindMapAgent
 from schemas.node import TranscriptChunk, MindMapNode, MapPayload, MapResponse
@@ -45,6 +49,14 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup():
     global col_mindmap, col_gallery, col_transcripts
+    
+    # Validate AssemblyAI API key
+    assemblyai_key = os.getenv("ASSEMBLYAI_API_KEY")
+    if not assemblyai_key:
+        print("⚠️  Warning: ASSEMBLYAI_API_KEY not set. Audio transcription will not work.")
+    else:
+        print("✅ AssemblyAI API key configured")
+    
     await db.connect_db()
     if db.database is None:
         raise RuntimeError("❌ MongoDB failed to initialize on startup.")
@@ -241,7 +253,7 @@ async def upload_audio(file: UploadFile = File(...)):
         config = aai.TranscriptionConfig(
             speaker_labels=True,
             auto_chapters=True,
-            entity_detection=True
+            entity_detection=False
         )
         
         transcript = aai.Transcriber().transcribe(temp_path, config)
@@ -361,9 +373,16 @@ async def generate_map_from_transcript(transcript_id: str, payload: dict):
 @app.post("/transcribe")
 async def transcribe_audio(audio: UploadFile = File(...)):
     """
-    Transcribe audio blob from MediaRecorder and return JSON format for mind map generation
+    Transcribe audio file using AssemblyAI
     """
     try:
+        # Check if AssemblyAI API key is configured
+        if not os.getenv("ASSEMBLYAI_API_KEY"):
+            raise HTTPException(
+                status_code=500, 
+                detail="AssemblyAI API key not configured. Please set ASSEMBLYAI_API_KEY environment variable."
+            )
+        
         if not audio.filename:
             raise HTTPException(status_code=400, detail="No audio file provided")
         
@@ -379,16 +398,32 @@ async def transcribe_audio(audio: UploadFile = File(...)):
         print(f"🎤 Processing audio file: {temp_path}")
         
         # Start AssemblyAI transcription
-        config = aai.TranscriptionConfig(
-            speaker_labels=True,
-            auto_chapters=True,
-            entity_detection=True
-        )
-        
-        transcript = aai.Transcriber().transcribe(temp_path, config)
-        
-        if transcript.status == aai.TranscriptStatus.error:
-            raise HTTPException(status_code=500, detail=f"Transcription failed: {transcript.error}")
+        try:
+            config = aai.TranscriptionConfig(
+                speaker_labels=True,
+                auto_chapters=True,
+                entity_detection=False
+            )
+            
+            transcript = aai.Transcriber().transcribe(temp_path, config)
+            
+            if transcript.status == aai.TranscriptStatus.error:
+                error_details = f"Transcription failed: {transcript.error}"
+                print(f"🔴 AssemblyAI Error: {error_details}")
+                print(f"🔴 Transcript ID: {transcript.id}")
+                print(f"🔴 Status: {transcript.status}")
+                # Clean up temp file before raising error
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                raise HTTPException(status_code=500, detail=error_details)
+                
+        except Exception as transcription_error:
+            print(f"🔴 AssemblyAI Transcription Exception: {transcription_error}")
+            print(f"🔴 Error type: {type(transcription_error)}")
+            # Clean up temp file before raising error
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            raise HTTPException(status_code=500, detail=f"Transcription service error: {str(transcription_error)}")
         
         print(f"✅ Transcription completed for {transcript_id}")
         
@@ -428,14 +463,7 @@ async def transcribe_audio(audio: UploadFile = File(...)):
                     "gist": c.gist
                 } for c in transcript.chapters
             ] if transcript.chapters else [],
-            "entities": [
-                {
-                    "text": e.text,
-                    "entity_type": e.entity_type,
-                    "start": e.start,
-                    "end": e.end
-                } for e in transcript.entities
-            ] if transcript.entities else []
+            "entities": []  # Disabled entity detection, so always empty
         }
         
         # Store in database
